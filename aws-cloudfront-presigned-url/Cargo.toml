@@ -1,0 +1,9 @@
+[package]
+name = "cloudfront-signed-url"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+openssl = "0.10.6"
+base64 = "0.9.0"
+getopts = "0.2.17"
