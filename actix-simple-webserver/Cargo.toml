@@ -1,0 +1,24 @@
+[package]
+name = "asio"
+version = "0.1.0"
+authors = ["legokichi <legokichi@gmail.com>"]
+
+[dependencies]
+log = "0.4"
+pretty_env_logger = "0.2"
+getopts = "0.2"
+
+# futures = "0.1"
+# futures-cpupool = "0.1"
+# futures-await = "0.1"
+# futures-fs = "0.0"
+# bytes = "0.4.6"
+# mdo = "*"
+
+# mio = "0.6"
+# tokio-core = "0.1"
+# rayon = "0.9"
+# hyper = "0.11"
+# hyper-tls = "0.1"
+# websocket = "0.20"
+
