@@ -1,0 +1,36 @@
+<script type="text/javascript" src="imprint.min.js"></script>
+<script type="text/javascript">    
+async function main(){
+  try{
+    const result = await imprint.test([
+        "audio",
+        "availableScreenResolution",
+        "canvas",
+        "colorDepth",
+        "cookies",
+        "cpuClass",
+        "deviceDpi",
+        "doNotTrack",
+        "indexedDb",
+        "installedFonts",
+        "language",
+        "localIp",
+        "localStorage",
+        "pixelRatio",
+        "platform",
+        "plugins",
+        "processorCores",
+        "screenResolution",
+        "sessionStorage",
+        "timezoneOffset",
+        "touchSupport",
+        "userAgent",
+        "webGl"
+    ]);
+    const ret = await fetch("/", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify(result) });
+  }catch(err){
+    const ret = await fetch("/", {method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify(err) });
+  }
+}
+window.onload=main;
+</script>

@@ -1,0 +1,3 @@
+[submodule "stdweb"]
+	path = stdweb
+	url = https://github.com/koute/stdweb.git

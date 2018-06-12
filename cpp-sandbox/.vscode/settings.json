@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "iostream": "cpp"
+    },
+    "rust.show_warnings": true,
+    "rust.unstable_features": true,
+    "rust.workspace_mode": true,
+    "rust.build_lib": true,
+    "rust-client.logToFile": true,
+    "editor.formatOnSave": false
+}

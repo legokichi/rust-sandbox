@@ -1,0 +1,18 @@
+[package]
+name = "tokio-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[features]
+# no features by default
+blocking_api = []
+
+[dependencies]
+getopts = "0.2"
+mdo = "0.3"
+mdo-future = "0.2"
+futures = "0.1"
+tokio = { git = "https://github.com/tokio-rs/tokio.git", commit = "8d8c895a1c97198e9461c4e01098f9c73ce626fe" }
+tokio-timer = { git = "https://github.com/tokio-rs/tokio.git", commit = "8d8c895a1c97198e9461c4e01098f9c73ce626fe" }
+tokio-reactor = { git = "https://github.com/tokio-rs/tokio.git", commit = "8d8c895a1c97198e9461c4e01098f9c73ce626fe" }
+tokio-threadpool = { git = "https://github.com/tokio-rs/tokio.git", commit = "8d8c895a1c97198e9461c4e01098f9c73ce626fe" }

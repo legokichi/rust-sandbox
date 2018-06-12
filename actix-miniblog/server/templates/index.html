@@ -1,0 +1,24 @@
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>memories</title>
+</head>
+<body style="background-color: black; color:lightgray;">
+  <h1>memories</h1>
+  <form action="/" method="post">
+    <p><label>name: <input type="text" name="username" required maxlength="64" autocomplete="on" default="annonymas" /></label></p>
+    <p><label>message: <textarea type="text" name="message" required maxlength="256" cols=128></textarea></label></p>
+    <input type="submit" />
+  </form>
+  <ul>
+    {% for entry in entries %}
+    <li style="list-style: none;">
+      <article>
+        <p style="color:lightgray;">{{ entry.message }}</p>
+        <p style="padding-left: 1em; color:gray;"><small>{{ entry.username }} - {{ entry.timestamp.format("%Y-%m-%d %H:%M:%S").to_string() }}</small></p>
+      </article>
+    </li>
+    {% endfor %}
+  </ul>
+</body>
+</html>

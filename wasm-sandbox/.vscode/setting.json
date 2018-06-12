@@ -1,0 +1,6 @@
+{
+    "rust.racerPath": "/home/legokichi/.cargo/bin/racer",
+    "rust.rustfmtPath": "/home/legokichi/.cargo/bin/rustfmt",
+    "rust.cargoPath": "/home/legokichi/.cargo/bin/cargo",
+    "rust.rustLangSrcPath": "/home/legokichi/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/lib/rustlib/src/rust/src"
+}
