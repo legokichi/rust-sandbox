@@ -1,0 +1,7 @@
+[package]
+name = "mio-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+mio = "0.6"
