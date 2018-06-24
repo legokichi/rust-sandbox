@@ -1,0 +1,7 @@
+[package]
+name = "epoll"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+nix = "0.11.0"

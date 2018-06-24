@@ -12,7 +12,7 @@ futures = "0.1"
 mdo = "0.3"
 mdo-future = "0.2"
 actix = "0.5"
-actix-web = "0.6"
+actix-web = { version = "0.6", default-features = false, features = ["flate2-rust"] }
 serde = "1.0"
 serde_json = "1.0"
 serde_derive = "1.0"

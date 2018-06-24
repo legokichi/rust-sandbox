@@ -36,6 +36,7 @@ docker run -p 8086:8086 \
 https://github.com/djc/askama/tree/master/testing
 
 
+```
 docker run -it --rm -v $(pwd):/source dlecan/rust-crosscompiler-arm:stable \
   env CC=arm-linux-gnueabihf-gcc \
   cargo build --release
@@ -48,3 +49,12 @@ docker run -it --rm -v $(pwd):/source dlecan/rust-crosscompiler-arm:stable \
   env env CC=arm-linux-gnueabihf-gcc \
       CC_arm_unknown_linux_gnu=arm-linux-gnueabihf-gcc-with-link-search \
   cargo build --release
+```
+
+```sh
+cargo build --target arm-unknown-linux-musleabihf --release 
+```
+
+```
+docker run --rm -it -v "$(pwd)":/home/rust/src messense/rust-musl-cross:arm-musleabihf cargo build --release
+```
