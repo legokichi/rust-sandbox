@@ -23,7 +23,7 @@ fn a()-> nix::Result<()> {
     
     // 接続待ち socket の fd
     let sockfd = socket(AddressFamily::Inet, SockType::Stream, SockFlag::SOCK_CLOEXEC, SockProtocol::Tcp)?;
-    let addr = SockAddr::new_inet(InetAddr::new(IpAddr::new_v4(127, 0, 0, 1), 8080));
+    let addr = SockAddr::new_inet(InetAddr::new(IpAddr::new_v4(127, 0, 0, 1), 12345));
     println!("server fd: {}", sockfd);
 
     // local address に bind
@@ -52,16 +52,25 @@ fn a()-> nix::Result<()> {
 
             // 待受 socket が読み込み可能になった
             if fd == sockfd && events == events & EpollFlags::EPOLLIN {
-                // socket への接続を accept して client と通信するための file descripter を作成
-                let client_fd = accept(sockfd)?;
-                println!("  accept client fd: {:?}", client_fd);
+                loop{
+                    match accept(sockfd) {
+                        Ok(client_fd) => {
+                            println!("  accept client fd: {:?}", client_fd);
+                            // client_fd を epoll の監視対象に入れて(EpollCtlAdd)
+                            // read 可能になるのを待つ (client が http requeset を送信してくるのを待つ)
+                            let mut ev = EpollEvent::new(EpollFlags::EPOLLIN | EpollFlags::EPOLLONESHOT, client_fd as u64);
+                            epoll_ctl(epfd, EpollOp::EpollCtlAdd, client_fd, &mut ev)?;
 
-                // client_fd を epoll の監視対象に入れて(EpollCtlAdd)
-                // read 可能になるのを待つ (client が http requeset を送信してくるのを待つ)
-                let mut ev = EpollEvent::new(EpollFlags::EPOLLIN | EpollFlags::EPOLLONESHOT, client_fd as u64);
-                epoll_ctl(epfd, EpollOp::EpollCtlAdd, client_fd, &mut ev)?;
-
-                clients.insert(client_fd, State::Read);
+                            clients.insert(client_fd, State::Read);
+                            break;
+                        },
+                        Err(nix::Error::Sys(nix::errno::Errno::EAGAIN)) => {
+                            println!("    suspended");
+                            break;
+                        },
+                        err => { err?; },
+                    }
+                }
                 continue;
             }
             // accept 済の client からの epoll event 
@@ -74,8 +83,9 @@ fn a()-> nix::Result<()> {
                     loop{
                         let mut buf: [u8; 64] = [0; 64];
                         let size = recv(client_fd, &mut buf, MsgFlags::empty())?;
-                        let req = std::str::from_utf8(&buf).unwrap().to_string();
-                        println!("    recv: buf: {:?}, size: {}", req, size);
+                        if size == 0 { println!("    closed"); break; }
+                        let req = std::str::from_utf8(&buf[0..size]).unwrap().to_string();
+                        println!("    recv: buf: {:?}", req);
 
                         // http request が終わるまで read し続ける
                         if !( req.find("\n\n").is_some() || req.find("\r\n\r\n").is_some() ){
