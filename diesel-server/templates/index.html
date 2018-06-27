@@ -1,0 +1,35 @@
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=660" />
+  <title>memories</title>
+  <style>
+    body { background-color: black; color:lightgray; }
+    h1 { color: lime; }
+    textarea { width: 100%; background-color: black; color: lime;  }
+    input[type="text"] { background-color: black; color: lime; }
+    input[type="submit"] { background-color: black; color: lime; float: right; }
+    ul { padding: 0px; }
+    li { list-style: none; }
+    article { color: lime; }
+    small{ padding-left: 1em; color:lightgray; }
+  </style>
+</head>
+<body>
+  <h1>memories</h1>
+  <form action="/" method="post">
+    <p><textarea type="text" name="message" required maxlength="256" cols="128" rows="4" placeholder="kill me baby"></textarea></p>
+    <p><label>name: <input type="text" name="username" required maxlength="64" autocomplete="on" value="annonymas" /></label><input type="submit" value="submit" /></p>
+  </form>
+  <ul>
+    {% for entry in entries %}
+    <li>
+      <article>
+        <p>{{ entry.message }}</p>
+        <p><small>{{ entry.username }} - {{ entry.timestamp.format("%Y-%m-%d %H:%M:%S").to_string() }}</small></p>
+      </article>
+    </li>
+    {% endfor %}
+  </ul>
+</body>
+</html>

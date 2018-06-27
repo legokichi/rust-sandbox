@@ -1,0 +1,14 @@
+[package]
+name = "db"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+serde = "1.0"
+serde_derive = "1.0"
+diesel = { version = "1.3", features = ["sqlite", "chrono", "uuid", "serde_json"] }
+chrono = { version = "0.4", features = ["serde"] }
+transaction-diesel = { version = "0.2" }
+transaction = { version = "0.2", features = ["mdo"] }
+failure = "0.1"
+mdo = "0.3"
