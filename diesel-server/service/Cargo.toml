@@ -1,0 +1,13 @@
+[package]
+name = "service"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+log = "0.4"
+failure = "0.1"
+futures = "0.1"
+mdo = "0.3"
+mdo-future = "0.2"
+transaction = { version = "0.2", features = ["mdo"] }
+db = { path = "../db" }

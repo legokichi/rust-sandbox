@@ -1,7 +1,9 @@
+extern crate dotenv;
+extern crate env_logger;
 #[macro_use]
 extern crate log;
-extern crate env_logger;
-extern crate dotenv;
+#[macro_use]
+extern crate failure;
 #[macro_use]
 extern crate askama;
 #[macro_use]
@@ -15,21 +17,16 @@ extern crate futures;
 extern crate tokio;
 extern crate hyper;
 extern crate serde_urlencoded;
-#[macro_use]
-extern crate failure;
-extern crate db;
+extern crate service;
 
 use mdo_future::future::*;
 use futures::prelude::*;
 use futures::future;
-use futures::Stream;
 use hyper::{Body, Request, Response, Server, Method, StatusCode};
 use hyper::service::service_fn;
 use hyper::header::{HeaderValue, LOCATION};
 use chrono::{DateTime, Utc};
 use askama::Template;
-use std::sync::{Arc, Mutex};
-
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -46,21 +43,78 @@ struct Entry {
 }
 
 #[derive(Fail, Debug)]
-enum Error {
+pub enum ErrorKind {
     #[fail(display = "{}", _0)]
-    DB(#[cause] ::db::Error),
+    Service(#[cause] service::ErrorKind),
     #[fail(display = "{}", _0)]
     UrlEncoded(#[cause] serde_urlencoded::de::Error),
     #[fail(display = "{}", _0)]
     Hyper(#[cause] ::hyper::Error),
     #[fail(display = "{}", _0)]
-    Io(#[cause] ::std::io::Error),
-    #[fail(display = "{}", _0)]
     Other(String),
 }
 
-type BoxFut = Box<Future<Item = Response<Body>, Error = hyper::Error> + Send + 'static>;
-type BoxFut2 = Box<Future<Item = Response<Body>, Error = Error> + Send>;
+fn error_handler(ret: Result<Response<Body>, ErrorKind>) -> Box<Future<Item=Response<Body>, Error=hyper::Error> + Send + 'static> {
+    match ret {
+        Ok(res) => Box::new(future::ok(res)),
+        Err(err) =>{
+            let mut res = Response::new(format!("{}", err));
+            match err{
+                ErrorKind::UrlEncoded(_) | ErrorKind::Hyper(_) => *res.status_mut() = StatusCode::BAD_REQUEST,
+                _ => *res.status_mut() = StatusCode::INTERNAL_SERVER_ERROR,
+            }
+            Box::new(future::ok(res.map(Into::into)))
+        }
+    }
+}
+
+fn handler(ctx: service::Posts, req: Request<Body>) -> Box<Future<Item=Response<Body>, Error=ErrorKind> + Send + 'static> {
+    let mut res = Response::new(Body::empty());
+    match (req.method(), req.uri().path()) {
+        (&Method::GET, "/") => {
+            #[derive(Deserialize)]
+            struct Query {
+                offset: u64,
+                limit: u64,
+            }
+            let fut = mdo!{
+                let query = req.uri().query().unwrap_or("offset=0&limit=100");
+                Query{ offset, limit } =<< future::result(serde_urlencoded::from_str(query)).map_err(ErrorKind::UrlEncoded);
+                (_len, lst) =<< ctx.list(offset, limit).map_err(ErrorKind::Service);
+                let entries = lst.iter().map(|o| Entry{
+                    timestamp: DateTime::from_utc(o.timestamp, Utc),
+                    username: o.author.to_string(),
+                    message: o.body.to_string()
+                }).collect();
+                tmp =<< future::result(IndexTemplate { entries }.render()).map_err(|err| ErrorKind::Other(err.description().to_string()) );
+                let _ = *res.body_mut() = Body::from(tmp);
+                ret future::ok(res)
+            };
+            Box::new(fut)
+        },
+        (&Method::POST, "/") => {
+            #[derive(Deserialize)]
+            struct FormData {
+                username: String,
+                message: String,
+            }
+            let fut = mdo!{
+                let body = req.into_body();
+                buf =<< body.concat2().map_err(ErrorKind::Hyper);
+                FormData{ username, message } =<< future::result(serde_urlencoded::from_bytes(&buf)).map_err(ErrorKind::UrlEncoded);
+                _ =<< ctx.create(&username, &message).map_err(ErrorKind::Service);
+                let _ = res.headers_mut().insert(LOCATION, HeaderValue::from_static("/"));
+                let _ = *res.status_mut() = StatusCode::SEE_OTHER;
+                ret future::ok(res)
+            };
+            Box::new(fut)
+        },
+        _ => {
+            *res.status_mut() = StatusCode::NOT_FOUND;
+            Box::new(future::ok(res))
+        }
+    }
+}
 
 fn main() {
     let _ = env_logger::try_init();
@@ -69,79 +123,15 @@ fn main() {
 
     let addr = ([127, 0, 0, 1], 3000).into();
     let server = Server::bind(&addr)
-        .serve(move ||{
-            let conn = Arc::new(Mutex::new(db::establish_connection(&database_url).unwrap()));
-            service_fn(move |req: Request<Body>| -> BoxFut {
-                let conn = conn.clone();
-                let mut res = Response::new(Body::empty());
-                let fut: BoxFut2 = match (req.method(), req.uri().path()) {
-                    // Serve some instructions at /
-                    (&Method::GET, "/") => {
-                        #[derive(Deserialize)]
-                        struct Query {
-                            offset: u64,
-                            limit: u64,
-                        }
-                        let fut = mdo!{
-                            let query = req.uri().query().unwrap_or("offset=0&limit=100");
-                            Query{offset, limit} =<< future::result(serde_urlencoded::from_str(query)).map_err(Error::UrlEncoded);
-                            (_len, lst) =<< future::result({
-                                let conn = conn.lock().unwrap();
-                                db::list_post(&conn, offset as i64, limit as i64)
-                            }).map_err(Error::DB);
-                            let entries = lst.iter().map(|db::models::Post{ id: _, timestamp, author, body }| Entry{
-                                timestamp: DateTime::from_utc(*timestamp, Utc), username: author.to_string(), message: body.to_string()
-                            }).collect();
-                            tmp =<< future::result(IndexTemplate { entries }.render()).map_err(|err| Error::Other(err.description().to_string()) );
-                            let _ = *res.body_mut() = Body::from(tmp);
-                            ret future::ok(res)
-                        };
-                        Box::new(fut) as BoxFut2
-                    },
-                    (&Method::POST, "/") => {
-                        #[derive(Deserialize)]
-                        struct FormData {
-                            username: String,
-                            message: String,
-                        }
-                        let fut = mdo!{
-                            let body = req.into_body();
-                            buf =<< body.concat2().map_err(Error::Hyper);
-                            FormData{username, message} =<< future::result(serde_urlencoded::from_bytes(&buf)).map_err(Error::UrlEncoded);
-                            _ =<< future::result({
-                                let conn = conn.lock().unwrap();
-                                db::create_post(&conn, &username, &message)
-                            }).map_err(Error::DB);
-                            let _ = res.headers_mut().insert(LOCATION, HeaderValue::from_static("/"));
-                            let _ = *res.status_mut() = StatusCode::SEE_OTHER;
-                            ret future::ok(res)
-                        };
-                        Box::new(fut) as BoxFut2
-                    },
-                    _ => {
-                        *res.status_mut() = StatusCode::NOT_FOUND;
-                        Box::new(future::ok(res)) as BoxFut2
-                    }
-                };
-                Box::new(fut.then(|o|{
-                    match o {
-                        Ok(res) => future::ok(res),
-                        Err(err) =>{
-                            let mut res = Response::new(format!("{}", err));
-                            match err{
-                                Error::UrlEncoded(_) |
-                                Error::Hyper(_) => *res.status_mut() = StatusCode::BAD_REQUEST,
-                                _ => *res.status_mut() = StatusCode::INTERNAL_SERVER_ERROR,
-                            }
-                            
-                            future::ok(res.map(Into::into))
-                        }
-                    }
-                })) as BoxFut
-            })
-        })
-        .map_err(|err| eprintln!("server error: {}", err) );
+        .serve(move || {
+            let fut = mdo!{
+                srv =<< service::Posts::new(&database_url).map_err(|_| unimplemented!());
+                ret service_fn(move |req| handler(srv.clone(), req).then(error_handler) )
+            };
+            Box::new(fut)
+        }).map_err(|err| error!("server error: {}", err) );
     let mut rt = tokio::runtime::current_thread::Runtime::new().unwrap();
     rt.spawn(server);
     rt.run().unwrap();
 }
+            
