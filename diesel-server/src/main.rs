@@ -8,6 +8,7 @@ extern crate failure;
 extern crate askama;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 extern crate chrono;
 #[macro_use]
@@ -16,17 +17,24 @@ extern crate mdo_future;
 extern crate futures;
 extern crate tokio;
 extern crate hyper;
+extern crate http;
 extern crate serde_urlencoded;
 extern crate service;
 
+use failure::{SyncFailure, Fail};
 use mdo_future::future::*;
 use futures::prelude::*;
 use futures::future;
 use hyper::{Body, Request, Response, Server, Method, StatusCode};
 use hyper::service::service_fn;
 use hyper::header::{HeaderValue, LOCATION};
+use http::header::{CONTENT_LENGTH, CONTENT_TYPE};
 use chrono::{DateTime, Utc};
 use askama::Template;
+
+pub mod error;
+pub use error::Error;
+pub use error::ErrorKind;
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -42,33 +50,40 @@ struct Entry {
     message: String,
 }
 
-#[derive(Fail, Debug)]
-pub enum ErrorKind {
-    #[fail(display = "{}", _0)]
-    Service(#[cause] service::ErrorKind),
-    #[fail(display = "{}", _0)]
-    UrlEncoded(#[cause] serde_urlencoded::de::Error),
-    #[fail(display = "{}", _0)]
-    Hyper(#[cause] ::hyper::Error),
-    #[fail(display = "{}", _0)]
-    Other(String),
-}
 
-fn error_handler(ret: Result<Response<Body>, ErrorKind>) -> Box<Future<Item=Response<Body>, Error=hyper::Error> + Send + 'static> {
+fn error_handler(ret: Result<Response<Body>, Error>) -> Box<Future<Item=Response<Body>, Error=hyper::Error> + Send + 'static> {
     match ret {
         Ok(res) => Box::new(future::ok(res)),
         Err(err) =>{
-            let mut res = Response::new(format!("{}", err));
-            match err{
-                ErrorKind::UrlEncoded(_) | ErrorKind::Hyper(_) => *res.status_mut() = StatusCode::BAD_REQUEST,
-                _ => *res.status_mut() = StatusCode::INTERNAL_SERVER_ERROR,
+            let mut fail: &Fail = &err;
+            let mut message = err.to_string();
+            while let Some(cause) = fail.cause() {
+                message.push_str(&format!("\n\tcaused by: {}", cause.to_string()));
+                fail = cause;
             }
+            let status_code = match *err.kind() {
+                ErrorKind::UrlParse | ErrorKind::Hyper => StatusCode::BAD_REQUEST,
+                ErrorKind::NotFound => StatusCode::NOT_FOUND,
+                _ => StatusCode::INTERNAL_SERVER_ERROR,
+            };
+
+            let body = json!({
+                "message": message,
+            }).to_string();
+
+            let res: Response<Body> = Response::builder()
+                .status(status_code)
+                .header(CONTENT_TYPE, "application/json")
+                .header(CONTENT_LENGTH, body.len().to_string().as_str())
+                .body(body.into())
+                .expect("response builder failure");
+
             Box::new(future::ok(res.map(Into::into)))
         }
     }
 }
 
-fn handler(ctx: service::Posts, req: Request<Body>) -> Box<Future<Item=Response<Body>, Error=ErrorKind> + Send + 'static> {
+fn handler(ctx: service::Posts, req: Request<Body>) -> Box<Future<Item=Response<Body>, Error=Error> + Send + 'static> {
     let mut res = Response::new(Body::empty());
     match (req.method(), req.uri().path()) {
         (&Method::GET, "/") => {
@@ -79,14 +94,14 @@ fn handler(ctx: service::Posts, req: Request<Body>) -> Box<Future<Item=Response<
             }
             let fut = mdo!{
                 let query = req.uri().query().unwrap_or("offset=0&limit=100");
-                Query{ offset, limit } =<< future::result(serde_urlencoded::from_str(query)).map_err(ErrorKind::UrlEncoded);
-                (_len, lst) =<< ctx.list(offset, limit).map_err(ErrorKind::Service);
+                Query{ offset, limit } =<< future::result(serde_urlencoded::from_str(query)).map_err(Into::into);
+                (_len, lst) =<< ctx.list(offset, limit).map_err(Into::into);
                 let entries = lst.iter().map(|o| Entry{
                     timestamp: DateTime::from_utc(o.timestamp, Utc),
                     username: o.author.to_string(),
                     message: o.body.to_string()
                 }).collect();
-                tmp =<< future::result(IndexTemplate { entries }.render()).map_err(|err| ErrorKind::Other(err.description().to_string()) );
+                tmp =<< future::result(IndexTemplate { entries }.render()).map_err(SyncFailure::new).map_err(Into::into);
                 let _ = *res.body_mut() = Body::from(tmp);
                 ret future::ok(res)
             };
@@ -100,9 +115,9 @@ fn handler(ctx: service::Posts, req: Request<Body>) -> Box<Future<Item=Response<
             }
             let fut = mdo!{
                 let body = req.into_body();
-                buf =<< body.concat2().map_err(ErrorKind::Hyper);
-                FormData{ username, message } =<< future::result(serde_urlencoded::from_bytes(&buf)).map_err(ErrorKind::UrlEncoded);
-                _ =<< ctx.create(&username, &message).map_err(ErrorKind::Service);
+                buf =<< body.concat2().map_err(Into::into);
+                FormData{ username, message } =<< future::result(serde_urlencoded::from_bytes(&buf)).map_err(Into::into);
+                _ =<< ctx.create(&username, &message).map_err(Into::into);
                 let _ = res.headers_mut().insert(LOCATION, HeaderValue::from_static("/"));
                 let _ = *res.status_mut() = StatusCode::SEE_OTHER;
                 ret future::ok(res)

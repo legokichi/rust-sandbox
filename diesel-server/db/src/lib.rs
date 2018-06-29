@@ -13,6 +13,9 @@ extern crate futures;
 
 pub mod models;
 pub mod schema;
+pub mod error;
+pub use error::Error;
+pub use error::ErrorKind;
 
 use futures::prelude::*;
 use futures::future;
@@ -22,13 +25,6 @@ use diesel::prelude::*;
 use chrono::{NaiveDateTime, Utc};
 use std::sync::{Arc, Mutex};
 
-#[derive(Fail, Debug)]
-pub enum ErrorKind {
-    #[fail(display = "{}", _0)]
-    Connection(#[cause] diesel::ConnectionError),
-    #[fail(display = "{}", _0)]
-    Query(#[cause] diesel::result::Error),
-}
 
 #[derive(Clone)]
 pub struct DB {
@@ -36,22 +32,22 @@ pub struct DB {
 }
 
 impl DB {
-    pub fn new(database_url: &str) -> Box<Future<Item=Self, Error=ErrorKind> + Send + 'static> {
+    pub fn new(database_url: &str) -> Box<Future<Item=Self, Error=Error> + Send + 'static> {
         let o = SqliteConnection::establish(&database_url)
-            .map_err(ErrorKind::Connection)
+            .map_err(Into::into)
             .map(Mutex::new)
             .map(Arc::new)
             .map(|conn| Self { conn });
         Box::new(future::result(o))
     }
-    pub fn run<'a, T: 'static + Send>(&self, tx: impl Transaction<Ctx=SqliteConnection, Item=T, Err=ErrorKind>) -> Box<Future<Item=T, Error=ErrorKind> + Send + 'static> {
+    pub fn run<'a, T: 'static + Send>(&self, tx: impl Transaction<Ctx=SqliteConnection, Item=T, Err=Error>) -> Box<Future<Item=T, Error=Error> + Send + 'static> {
         let o = {
             let mut conn = self.conn.lock().unwrap();
             tx.run(&mut conn)
         };
         Box::new(future::result(o))
     }
-    pub fn create<'a>(&self, author: &'a str, body: &'a str) -> impl Transaction<Ctx=SqliteConnection, Item=usize, Err=ErrorKind> + 'a{
+    pub fn create<'a>(&self, author: &'a str, body: &'a str) -> impl Transaction<Ctx=SqliteConnection, Item=usize, Err=Error> + 'a{
         with_ctx(move |conn|{
             use schema::posts;
             let now = Utc::now();
@@ -63,10 +59,10 @@ impl DB {
             diesel::insert_into(posts::table)
                 .values(&new_post)
                 .execute(conn)
-                .map_err(ErrorKind::Query)
+                .map_err(Into::into)
         })
     }
-    pub fn list<'a>(&self, offset: u64, limit: u64) -> impl Transaction<Ctx=SqliteConnection, Item=Vec<models::Post>, Err=ErrorKind> + 'a {
+    pub fn list<'a>(&self, offset: u64, limit: u64) -> impl Transaction<Ctx=SqliteConnection, Item=Vec<models::Post>, Err=Error> + 'a {
         with_ctx(move |conn|{
             use schema::posts::dsl;
             dsl::posts
@@ -74,17 +70,17 @@ impl DB {
                 .limit(limit as i64)
                 .offset(offset as i64)
                 .get_results::<models::Post>(conn)
-                .map_err(ErrorKind::Query)
+                .map_err(Into::into)
         })
     }
-    pub fn count<'a>(&self) -> impl Transaction<Ctx=SqliteConnection, Item=u64, Err=ErrorKind> + 'a {
+    pub fn count<'a>(&self) -> impl Transaction<Ctx=SqliteConnection, Item=u64, Err=Error> + 'a {
         with_ctx(move |conn|{
             use schema::posts::dsl;
             dsl::posts
                 .count()
                 .get_result::<i64>(conn)
                 .map(|o| o as u64)
-                .map_err(ErrorKind::Query)
+                .map_err(Into::into)
         })
     }
 }
