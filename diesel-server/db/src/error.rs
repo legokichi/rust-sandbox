@@ -36,7 +36,6 @@ pub struct Error {
     inner: Context<ErrorKind>,
 }
 
-
 impl Fail for Error {
     fn cause(&self) -> Option<&Fail> {
         self.inner.cause()

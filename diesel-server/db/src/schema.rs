@@ -4,5 +4,6 @@ table! {
         timestamp -> Timestamp,
         author -> Text,
         body -> Text,
+        soudane -> Integer,
     }
 }

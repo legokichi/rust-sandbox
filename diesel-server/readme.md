@@ -13,8 +13,29 @@ diesel migration generate blog
 ```
 
 ```sh
-diesel database reset
+diesel setup
+//diesel database reset
 diesel migration run
 ```
 
 `diesel.toml` + `diesel migration run` = `diesel print-schema | tee db/src/schema.rs`
+
+```
+docker run -ti --rm armhf/alpine bash server
+```
+
+
+```
+docker run -it --rm -v $(pwd):/source dlecan/rust-crosscompiler-arm:stable \
+  env CC=arm-linux-gnueabihf-gcc \
+  cargo build --release
+      CC_arm_unknown_linux_gnu=arm-linux-gnueabihf-gcc-with-link-search \
+      CC_arm_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc-6 \
+      AR_arm_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc-ar-6 \
+      cargo build --release
+
+ docker run -it --rm -v $(pwd):/source dlecan/rust-crosscompiler-arm:stable \
+  env env CC=arm-linux-gnueabihf-gcc \
+      CC_arm_unknown_linux_gnu=arm-linux-gnueabihf-gcc-with-link-search \
+  cargo build --release
+```

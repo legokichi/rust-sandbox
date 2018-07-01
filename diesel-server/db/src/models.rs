@@ -8,6 +8,7 @@ pub struct Post {
     pub timestamp: NaiveDateTime,
     pub author: String,
     pub body: String,
+    pub soudane: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -17,4 +18,12 @@ pub struct NewPost<'a> {
     pub timestamp: NaiveDateTime,
     pub author: &'a str,
     pub body: &'a str,
+    pub soudane: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(AsChangeset)]
+#[table_name = "posts"]
+pub struct UpdatePost {
+    pub soudane: Option<i32>,
 }

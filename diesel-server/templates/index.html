@@ -2,7 +2,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=660" />
-  <title>memories</title>
+  <title>The End of Internet</title>
   <style>
     body { background-color: black; color:lightgray; }
     h1 { color: lime; }
@@ -13,11 +13,12 @@
     li { list-style: none; }
     article { color: lime; }
     small{ padding-left: 1em; color:lightgray; }
+    a, a:visited { color: lime; }
   </style>
 </head>
 <body>
-  <h1>memories</h1>
-  <form action="/" method="post">
+  <h1>The End of Internet</h1>
+  <form method="post" action="/">
     <p><textarea type="text" name="message" required maxlength="256" cols="128" rows="4" placeholder="kill me baby"></textarea></p>
     <p><label>name: <input type="text" name="username" required maxlength="64" autocomplete="on" value="annonymas" /></label><input type="submit" value="submit" /></p>
   </form>
@@ -26,10 +27,18 @@
     <li>
       <article>
         <p>{{ entry.message }}</p>
-        <p><small>{{ entry.username }} - {{ entry.timestamp.format("%Y-%m-%d %H:%M:%S").to_string() }}</small></p>
+        <form method="post" action="/soudane">
+          <p>
+            <small>{{ entry.username }} - {{ entry.timestamp.format("%Y-%m-%d %H:%M:%S").to_string() }}</small>
+            <input type="hidden" name="id" value="{{ entry.id }}" />
+            {{ entry.soudane }}
+            <input type="submit" value="そうだね" />
+          </p>
+        </form>
       </article>
     </li>
     {% endfor %}
   </ul>
+  <a href="/?offset={{ offset }}&limit={{ limit }}">next</a>
 </body>
 </html>

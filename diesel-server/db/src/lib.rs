@@ -22,7 +22,7 @@ use futures::future;
 use transaction::prelude::*;
 use transaction::mdo::*;
 use diesel::prelude::*;
-use chrono::{NaiveDateTime, Utc};
+use chrono::{NaiveDateTime, DateTime, Utc};
 use std::sync::{Arc, Mutex};
 
 
@@ -55,6 +55,23 @@ impl DB {
                 timestamp: NaiveDateTime::from_timestamp(now.timestamp(), 0),
                 author: author,
                 body: body,
+                soudane: 0,
+            };
+            diesel::insert_into(posts::table)
+                .values(&new_post)
+                .execute(conn)
+                .map_err(Into::into)
+        })
+    }
+    pub fn create_with_time<'a>(&self, author: &'a str, body: &'a str, timestamp: DateTime<Utc>) -> impl Transaction<Ctx=SqliteConnection, Item=usize, Err=Error> + 'a{
+        with_ctx(move |conn|{
+            use schema::posts;
+            let now = timestamp;
+            let new_post = models::NewPost {
+                timestamp: NaiveDateTime::from_timestamp(now.timestamp(), 0),
+                author: author,
+                body: body,
+                soudane: 0,
             };
             diesel::insert_into(posts::table)
                 .values(&new_post)
@@ -71,6 +88,27 @@ impl DB {
                 .offset(offset as i64)
                 .get_results::<models::Post>(conn)
                 .map_err(Into::into)
+        })
+    }
+    pub fn soudane<'a>(&self, id: i32) -> impl Transaction<Ctx=SqliteConnection, Item=Option<()>, Err=Error> + 'a {
+        with_ctx(move |conn|{
+            use schema::posts::dsl;
+            let post_opt = dsl::posts
+                .find(id)
+                .get_result::<models::Post>(conn)
+                .optional()?;
+            if let Some(post) = post_opt {
+                diesel::update(dsl::posts
+                    .find(id))
+                    .set(&models::UpdatePost {
+                        soudane: Some(post.soudane + 1)
+                    })
+                    .execute(conn)
+                    .map(|rows| if rows == 1 { Some(()) } else { None })
+                    .map_err(Into::into)
+            }else{
+                Ok(None)
+            }
         })
     }
     pub fn count<'a>(&self) -> impl Transaction<Ctx=SqliteConnection, Item=u64, Err=Error> + 'a {

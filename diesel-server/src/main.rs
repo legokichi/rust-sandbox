@@ -40,7 +40,9 @@ pub use error::ErrorKind;
 #[template(path = "index.html")]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct IndexTemplate {
-    entries: Vec<Entry>
+    entries: Vec<Entry>,
+    limit: u64,
+    offset: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -48,15 +50,21 @@ struct Entry {
     timestamp: DateTime<Utc>,
     username: String,
     message: String,
+    soudane: i32,
+    id: i32,
 }
 
-
+/// ex.
+/// ```json
+/// {"message":"service error\n\tcaused by: db error\n\tcaused by: diesel query result error\n\tcaused by: attempt to write a readonly database"}
+/// ```
 fn error_handler(ret: Result<Response<Body>, Error>) -> Box<Future<Item=Response<Body>, Error=hyper::Error> + Send + 'static> {
     match ret {
         Ok(res) => Box::new(future::ok(res)),
         Err(err) =>{
             let mut fail: &Fail = &err;
             let mut message = err.to_string();
+            
             while let Some(cause) = fail.cause() {
                 message.push_str(&format!("\n\tcaused by: {}", cause.to_string()));
                 fail = cause;
@@ -93,15 +101,17 @@ fn handler(ctx: service::Posts, req: Request<Body>) -> Box<Future<Item=Response<
                 limit: u64,
             }
             let fut = mdo!{
-                let query = req.uri().query().unwrap_or("offset=0&limit=100");
+                let query = req.uri().query().unwrap_or("offset=0&limit=40");
                 Query{ offset, limit } =<< future::result(serde_urlencoded::from_str(query)).map_err(Into::into);
                 (_len, lst) =<< ctx.list(offset, limit).map_err(Into::into);
                 let entries = lst.iter().map(|o| Entry{
                     timestamp: DateTime::from_utc(o.timestamp, Utc),
                     username: o.author.to_string(),
-                    message: o.body.to_string()
+                    message: o.body.to_string(),
+                    soudane: o.soudane,
+                    id: o.id,
                 }).collect();
-                tmp =<< future::result(IndexTemplate { entries }.render()).map_err(SyncFailure::new).map_err(Into::into);
+                tmp =<< future::result(IndexTemplate { entries, offset: offset + limit, limit }.render()).map_err(SyncFailure::new).map_err(Into::into);
                 let _ = *res.body_mut() = Body::from(tmp);
                 ret future::ok(res)
             };
@@ -124,6 +134,22 @@ fn handler(ctx: service::Posts, req: Request<Body>) -> Box<Future<Item=Response<
             };
             Box::new(fut)
         },
+        (&Method::POST, "/soudane") => {
+            #[derive(Deserialize)]
+            struct FormData {
+                id: i32,
+            }
+            let fut = mdo!{
+                let body = req.into_body();
+                buf =<< body.concat2().map_err(Into::into);
+                FormData{ id } =<< future::result(serde_urlencoded::from_bytes(&buf)).map_err(Into::into);
+                _ =<< ctx.soudane(id).map_err(Into::into);
+                let _ = res.headers_mut().insert(LOCATION, HeaderValue::from_static("/"));
+                let _ = *res.status_mut() = StatusCode::SEE_OTHER;
+                ret future::ok(res)
+            };
+            Box::new(fut)
+        },
         _ => {
             *res.status_mut() = StatusCode::NOT_FOUND;
             Box::new(future::ok(res))
@@ -135,6 +161,7 @@ fn main() {
     let _ = env_logger::try_init();
     dotenv::dotenv().ok();
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL is not set");
+    println!("database_url: {}", database_url);
 
     let addr = ([127, 0, 0, 1], 3000).into();
     let server = Server::bind(&addr)
@@ -149,4 +176,3 @@ fn main() {
     rt.spawn(server);
     rt.run().unwrap();
 }
-            

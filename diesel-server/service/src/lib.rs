@@ -51,4 +51,8 @@ impl Posts {
         }).map_err(Into::into);
         Box::new(fut)
     }
+    pub fn soudane(&self, id: i32) -> Box<Future<Item=Option<()>, Error=Error> + Send + 'static> {
+        let fut = self.db.run(self.db.soudane(id)).map_err(Into::into);
+        Box::new(fut)
+    }
 }
