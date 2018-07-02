@@ -3,6 +3,17 @@ name = "timer-sandbox"
 version = "0.1.0"
 authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
 
+
+[workspace]
+members = [
+    "./",
+    "actix05-example",
+    "actix06-example",
+    "tokio-core-example",
+    "tokio-runtime-example",
+]
+
+
 [dependencies]
 mdo = "0.3"
 mdo-future = "0.2"

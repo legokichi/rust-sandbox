@@ -1,0 +1,11 @@
+[package]
+name = "actix05-example"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+mdo = "0.3"
+mdo-future = "0.2"
+actix = "0.5"
+tokio-core = "0.1"
+futures = "0.1"

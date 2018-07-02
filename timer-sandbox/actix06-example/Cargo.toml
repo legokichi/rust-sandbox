@@ -1,0 +1,12 @@
+[package]
+name = "actix06-example"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+mdo = "0.3"
+mdo-future = "0.2"
+actix = "0.6"
+futures = "0.1"
+tokio = "0.1.7"
+tokio-timer = "0.2.4"
