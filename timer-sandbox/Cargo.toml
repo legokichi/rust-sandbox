@@ -9,5 +9,5 @@ mdo-future = "0.2"
 actix = "0.5"
 tokio-core = "0.1"
 futures = "0.1"
-tokio = { git = "https://github.com/tokio-rs/tokio.git", commit = "24d99c029eff5d5b82aff567f1ad5ede8a8c2576" }
-tokio-timer = { git = "https://github.com/tokio-rs/tokio.git", commit = "24d99c029eff5d5b82aff567f1ad5ede8a8c2576" }
+tokio = "0.1.7"
+tokio-timer = "0.2.4"
