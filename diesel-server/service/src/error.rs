@@ -6,7 +6,6 @@ pub enum ErrorKind {
     DB,
 }
 
-
 impl From<DBError> for Error {
     fn from(error: DBError) -> Error {
         Error {
@@ -15,12 +14,11 @@ impl From<DBError> for Error {
     }
 }
 
+// ----------- failure crate template -----------
 
-/* ----------- failure crate template ----------- */
-
+use failure::{Backtrace, Context, Fail};
 use std::fmt;
 use std::fmt::Display;
-use failure::{Backtrace, Context, Fail};
 
 #[derive(Debug)]
 pub struct Error {

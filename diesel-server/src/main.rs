@@ -13,24 +13,24 @@ extern crate serde_json;
 extern crate chrono;
 #[macro_use]
 extern crate mdo;
-extern crate mdo_future;
 extern crate futures;
-extern crate tokio;
-extern crate hyper;
 extern crate http;
+extern crate hyper;
+extern crate mdo_future;
 extern crate serde_urlencoded;
 extern crate service;
+extern crate tokio;
 
-use failure::{SyncFailure, Fail};
-use mdo_future::future::*;
-use futures::prelude::*;
-use futures::future;
-use hyper::{Body, Request, Response, Server, Method, StatusCode};
-use hyper::service::service_fn;
-use hyper::header::{HeaderValue, LOCATION};
-use http::header::{CONTENT_LENGTH, CONTENT_TYPE};
-use chrono::{DateTime, Utc};
 use askama::Template;
+use chrono::{DateTime, Utc};
+use failure::{Fail, SyncFailure};
+use futures::future;
+use futures::prelude::*;
+use http::header::{CONTENT_LENGTH, CONTENT_TYPE};
+use hyper::header::{HeaderValue, LOCATION};
+use hyper::service::service_fn;
+use hyper::{Body, Method, Request, Response, Server, StatusCode};
+use mdo_future::future::*;
 
 pub mod error;
 pub use error::Error;
@@ -58,13 +58,15 @@ struct Entry {
 /// ```json
 /// {"message":"service error\n\tcaused by: db error\n\tcaused by: diesel query result error\n\tcaused by: attempt to write a readonly database"}
 /// ```
-fn error_handler(ret: Result<Response<Body>, Error>) -> Box<Future<Item=Response<Body>, Error=hyper::Error> + Send + 'static> {
+fn error_handler(
+    ret: Result<Response<Body>, Error>,
+) -> Box<Future<Item = Response<Body>, Error = hyper::Error> + Send + 'static> {
     match ret {
         Ok(res) => Box::new(future::ok(res)),
-        Err(err) =>{
+        Err(err) => {
             let mut fail: &Fail = &err;
             let mut message = err.to_string();
-            
+
             while let Some(cause) = fail.cause() {
                 message.push_str(&format!("\n\tcaused by: {}", cause.to_string()));
                 fail = cause;
@@ -91,7 +93,10 @@ fn error_handler(ret: Result<Response<Body>, Error>) -> Box<Future<Item=Response
     }
 }
 
-fn handler(ctx: service::Posts, req: Request<Body>) -> Box<Future<Item=Response<Body>, Error=Error> + Send + 'static> {
+fn handler(
+    ctx: service::Posts,
+    req: Request<Body>,
+) -> Box<Future<Item = Response<Body>, Error = Error> + Send + 'static> {
     let mut res = Response::new(Body::empty());
     match (req.method(), req.uri().path()) {
         (&Method::GET, "/") => {
@@ -116,7 +121,7 @@ fn handler(ctx: service::Posts, req: Request<Body>) -> Box<Future<Item=Response<
                 ret future::ok(res)
             };
             Box::new(fut)
-        },
+        }
         (&Method::POST, "/") => {
             #[derive(Deserialize)]
             struct FormData {
@@ -133,7 +138,7 @@ fn handler(ctx: service::Posts, req: Request<Body>) -> Box<Future<Item=Response<
                 ret future::ok(res)
             };
             Box::new(fut)
-        },
+        }
         (&Method::POST, "/soudane") => {
             #[derive(Deserialize)]
             struct FormData {
@@ -149,7 +154,7 @@ fn handler(ctx: service::Posts, req: Request<Body>) -> Box<Future<Item=Response<
                 ret future::ok(res)
             };
             Box::new(fut)
-        },
+        }
         _ => {
             *res.status_mut() = StatusCode::NOT_FOUND;
             Box::new(future::ok(res))
@@ -171,7 +176,8 @@ fn main() {
                 ret service_fn(move |req| handler(srv.clone(), req).then(error_handler) )
             };
             Box::new(fut)
-        }).map_err(|err| error!("server error: {}", err) );
+        })
+        .map_err(|err| error!("server error: {}", err));
     let mut rt = tokio::runtime::current_thread::Runtime::new().unwrap();
     rt.spawn(server);
     rt.run().unwrap();

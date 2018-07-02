@@ -1,8 +1,7 @@
 use super::schema::posts;
-use ::chrono::NaiveDateTime;
+use chrono::NaiveDateTime;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[derive(Queryable)]
+#[derive(Serialize, Deserialize, Debug, Clone, Queryable)]
 pub struct Post {
     pub id: i32,
     pub timestamp: NaiveDateTime,
@@ -11,8 +10,7 @@ pub struct Post {
     pub soudane: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[derive(Insertable)]
+#[derive(Serialize, Deserialize, Debug, Clone, Insertable)]
 #[table_name = "posts"]
 pub struct NewPost<'a> {
     pub timestamp: NaiveDateTime,
@@ -21,8 +19,7 @@ pub struct NewPost<'a> {
     pub soudane: i32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[derive(AsChangeset)]
+#[derive(Serialize, Deserialize, Debug, Clone, AsChangeset)]
 #[table_name = "posts"]
 pub struct UpdatePost {
     pub soudane: Option<i32>,

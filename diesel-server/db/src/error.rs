@@ -1,5 +1,5 @@
-use diesel::ConnectionError;
 use diesel::result::Error as QueryResultError;
+use diesel::ConnectionError;
 
 #[derive(Fail, Debug)]
 pub enum ErrorKind {
@@ -25,11 +25,11 @@ impl From<QueryResultError> for Error {
     }
 }
 
-/* ----------- failure crate template ----------- */
+// ----------- failure crate template -----------
 
+use failure::{Backtrace, Context, Fail};
 use std::fmt;
 use std::fmt::Display;
-use failure::{Backtrace, Context, Fail};
 
 #[derive(Debug)]
 pub struct Error {

@@ -1,11 +1,9 @@
-use service::Error as ServiceError;
-use serde_urlencoded::de::Error as UrlParseError;
 use askama::Error as AskamaError;
 use failure::SyncFailure;
+use hyper::{Error as HyperError, StatusCode as HyperStatusCode};
+use serde_urlencoded::de::Error as UrlParseError;
+use service::Error as ServiceError;
 use std::io::Error as IOError;
-use http::header::{CONTENT_LENGTH, CONTENT_TYPE};
-use http::{Response, StatusCode};
-use hyper::{Body, Error as HyperError, StatusCode as HyperStatusCode};
 
 #[derive(Fail, Debug)]
 pub enum ErrorKind {
@@ -83,17 +81,16 @@ impl From<SyncFailure<AskamaError>> for Error {
     }
 }
 
-/* ----------- failure crate template ----------- */
+// ----------- failure crate template -----------
 
+use failure::{Backtrace, Context, Fail};
 use std::fmt;
 use std::fmt::Display;
-use failure::{Backtrace, Context, Fail};
 
 #[derive(Debug)]
 pub struct Error {
     inner: Context<ErrorKind>,
 }
-
 
 impl Fail for Error {
     fn cause(&self) -> Option<&Fail> {
