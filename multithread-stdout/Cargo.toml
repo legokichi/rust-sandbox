@@ -1,0 +1,6 @@
+[package]
+name = "multithread-stdout"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
