@@ -411,8 +411,7 @@ docker run -it --rm \
 apt-get update -y
 apt-get install -y libsqlite3-dev:armhf
 rustup target add arm-unknown-linux-gnueabihf
-/usr/lib/arm-linux-gnueabihf/
-cargo build
+cargo build --release
 readelf --arch-specific ./target/arm-unknown-linux-gnueabihf/debug/server
 ```
 
