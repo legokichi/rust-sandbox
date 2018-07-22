@@ -1,0 +1,12 @@
+[package]
+name = "docker-uds"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+futures = "0.1"
+mdo = "0.3"
+mdo-future = "0.2"
+tokio = "0.1"
+tokio-uds = "0.2"
+tokio-timer = "0.2"
