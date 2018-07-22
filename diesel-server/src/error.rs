@@ -1,7 +1,6 @@
 use askama::Error as AskamaError;
 use failure::SyncFailure;
-use hyper::{Error as HyperError, StatusCode as HyperStatusCode};
-use serde_urlencoded::de::Error as UrlParseError;
+use actix_web::error::Error as ActixError;
 use service::Error as ServiceError;
 use std::io::Error as IOError;
 
@@ -10,7 +9,7 @@ pub enum ErrorKind {
     #[fail(display = "IO error")]
     Io,
     #[fail(display = "Service error: [{}] {}", _0, _1)]
-    ServiceError(HyperStatusCode, String),
+    ServiceError(ActixError, String),
     #[fail(display = "service error")]
     Service,
     #[fail(display = "Url parse error")]
@@ -29,23 +28,25 @@ pub enum ErrorKind {
     NotFound,
 }
 
+impl Into<ActixError> for Error {
+    fn into(self) -> ActixError {
+        let mut fail: &Fail = &self;
+        let mut message = self.to_string();
+        while let Some(cause) = fail.cause() {
+            message.push_str(&format!("\n\tcaused by: {}", cause.to_string()));
+            fail = cause;
+        }
+        match *self.kind() {
+            _ => ::actix_web::error::ErrorInternalServerError(message),
+        }
+    }
+}
+
 impl From<IOError> for Error {
     fn from(error: IOError) -> Error {
         Error {
             inner: error.context(ErrorKind::Io),
         }
-    }
-}
-
-impl<'a> From<(HyperStatusCode, &'a [u8])> for Error {
-    fn from(err: (HyperStatusCode, &'a [u8])) -> Self {
-        let (status_code, msg) = err;
-        Error::from(ErrorKind::ServiceError(
-            status_code,
-            ::std::str::from_utf8(msg)
-                .unwrap_or_else(|_| "Could not decode error message")
-                .to_string(),
-        ))
     }
 }
 
@@ -57,26 +58,10 @@ impl From<ServiceError> for Error {
     }
 }
 
-impl From<UrlParseError> for Error {
-    fn from(error: UrlParseError) -> Error {
+impl From<AskamaError> for Error {
+    fn from(error: AskamaError) -> Error {
         Error {
-            inner: error.context(ErrorKind::UrlParse),
-        }
-    }
-}
-
-impl From<HyperError> for Error {
-    fn from(error: HyperError) -> Error {
-        Error {
-            inner: error.context(ErrorKind::Hyper),
-        }
-    }
-}
-
-impl From<SyncFailure<AskamaError>> for Error {
-    fn from(error: SyncFailure<AskamaError>) -> Error {
-        Error {
-            inner: error.context(ErrorKind::Askama),
+            inner: SyncFailure::new(error).context(ErrorKind::Askama),
         }
     }
 }
