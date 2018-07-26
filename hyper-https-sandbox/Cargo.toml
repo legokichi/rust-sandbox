@@ -1,0 +1,13 @@
+[package]
+name = "hyper-https-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+log = "0.4"
+hyper-tls = "0.3"
+hyper = "0.12"
+tokio = "0.1"
+futures = "0.1"
+serde_json = "1.0"
+flate2 = { version = "1.0", features = ["zlib"], default-features = false }
