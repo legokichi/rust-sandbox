@@ -54,10 +54,13 @@ fn main() {
     dotenv::dotenv().ok();
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL is not set");
     println!("database_url: {}", database_url);
-    let srv = service::Posts::new(&database_url).map_err(|_| unimplemented!()).wait().unwrap();
-     server::new(move || {
-        type Ret1 = Box<dyn Future<Item=HttpResponse, Error=error::Error> + 'static>;
-        type Ret2 = Box<dyn Future<Item=HttpResponse, Error=actix_web::error::Error> + 'static>;
+    let srv = service::Posts::new(&database_url)
+        .map_err(|_| unimplemented!())
+        .wait()
+        .unwrap();
+    server::new(move || {
+        type Ret1 = Box<dyn Future<Item = HttpResponse, Error = error::Error> + 'static>;
+        type Ret2 = Box<dyn Future<Item = HttpResponse, Error = actix_web::error::Error> + 'static>;
         App::with_state(srv.clone())
             .route("/", http::Method::GET, {
                 #[derive(Deserialize)]
@@ -65,8 +68,8 @@ fn main() {
                     offset: Option<u64>,
                     limit: Option<u64>,
                 }
-                |(ctx, path): (State<service::Posts>, Query<QueryData>)|-> Ret2 {
-                    let fut = Box::new(mdo!{
+                |(ctx, path): (State<service::Posts>, Query<QueryData>)| -> Ret2 {
+                    let fut = mdo!{
                         let offset = path.offset.unwrap_or(0);
                         let limit = path.limit.unwrap_or(40);
                         (_len, lst) =<< ctx.list(offset, limit).map_err(Into::into);
@@ -78,8 +81,8 @@ fn main() {
                             id: o.id,
                         }).collect();
                         body =<< future::result(IndexTemplate { entries, offset: offset + limit, limit }.render()).map_err(Into::into);
-                        ret future::ok(HttpResponse::Ok().body(body))
-                    }) as Ret1;
+                        ret future::ok::<_, error::Error>(HttpResponse::Ok().body(body))
+                    };
                     Box::new(fut.map_err(actix_web::error::ErrorInternalServerError))
                 }
             })
@@ -89,11 +92,11 @@ fn main() {
                     username: String,
                     message: String,
                 }
-                |(ctx, body): (State<service::Posts>, Form<FormData>)|-> Ret2 {
-                    let fut = Box::new(mdo!{
+                |(ctx, body): (State<service::Posts>, Form<FormData>)| -> Ret2 {
+                    let fut = mdo!{
                         _ =<< ctx.create(&body.username, &body.message).map_err(Into::into);
-                        ret future::ok(HttpResponse::SeeOther().header(http::header::LOCATION, "/").body(""))
-                    }) as Ret1;
+                        ret future::ok::<_, error::Error>(HttpResponse::SeeOther().header(http::header::LOCATION, "/").body(""))
+                    };
                     Box::new(fut.map_err(actix_web::error::ErrorInternalServerError))
                 }
             })
@@ -102,11 +105,11 @@ fn main() {
                 struct FormData {
                     id: i32,
                 }
-                |(ctx, body): (State<service::Posts>, Form<FormData>)|-> Ret2 {
-                    let fut = Box::new(mdo!{
+                |(ctx, body): (State<service::Posts>, Form<FormData>)| -> Ret2 {
+                    let fut = mdo!{
                         _ =<< ctx.soudane(body.id).map_err(Into::into);
-                        ret future::ok(HttpResponse::SeeOther().header(http::header::LOCATION, "/").body(""))
-                    }) as Ret1;
+                        ret future::ok::<_, error::Error>(HttpResponse::SeeOther().header(http::header::LOCATION, "/").body(""))
+                    };
                     Box::new(fut.map_err(actix_web::error::ErrorInternalServerError))
                 }
             })

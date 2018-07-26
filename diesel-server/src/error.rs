@@ -7,25 +7,11 @@ use std::io::Error as IOError;
 #[derive(Fail, Debug)]
 pub enum ErrorKind {
     #[fail(display = "IO error")]
-    Io,
-    #[fail(display = "Service error: [{}] {}", _0, _1)]
-    ServiceError(ActixError, String),
+    IO,
     #[fail(display = "service error")]
     Service,
-    #[fail(display = "Url parse error")]
-    Parse,
-    #[fail(display = "Serde error")]
-    Serde,
-    #[fail(display = "Invalid uri {}", _0)]
-    InvalidUri(String),
-    #[fail(display = "Cannot parse uri")]
-    UrlParse,
-    #[fail(display = "Hyper error")]
-    Hyper,
     #[fail(display = "askama error")]
     Askama,
-    #[fail(display = "Module not found")]
-    NotFound,
 }
 
 impl Into<ActixError> for Error {
@@ -45,7 +31,7 @@ impl Into<ActixError> for Error {
 impl From<IOError> for Error {
     fn from(error: IOError) -> Error {
         Error {
-            inner: error.context(ErrorKind::Io),
+            inner: error.context(ErrorKind::IO),
         }
     }
 }
