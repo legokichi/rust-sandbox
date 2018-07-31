@@ -59,9 +59,14 @@ RUN echo '  "-Z", "print-link-args",' | tee -a /source/.cargo/config
 RUN echo ']' | tee -a /source/.cargo/config
 
 ADD . /source
-RUN cargo build -v --target=arm-unknown-linux-gnueabihf -p server
-RUN readelf --arch-specific ./target/arm-unknown-linux-gnueabihf/debug/server
-RUN readelf -d ./target/arm-unknown-linux-gnueabihf/debug/server
+RUN cargo build -v --target=arm-unknown-linux-gnueabihf -p server --release
+RUN readelf --arch-specific ./target/arm-unknown-linux-gnueabihf/release/server
+RUN readelf -d ./target/arm-unknown-linux-gnueabihf/release/server
+
+
+FROM debian:jessie
+WORKDIR /opt
+COPY --from=builder /source/target/arm-unknown-linux-gnueabihf/release/server /opt/server
 
 # FROM arm32v6/alpine:latest
 # # RUN apk add --update --no-cache \
@@ -69,6 +74,5 @@ RUN readelf -d ./target/arm-unknown-linux-gnueabihf/debug/server
 # #     sqlite-dev \
 # #     sqlite
 # WORKDIR /opt
-# COPY --from=builder /source/target/arm-unknown-linux-gnueabihf/release/server server
 # EXPOSE 3000
 # CMD ["/opt/server"]
