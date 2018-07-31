@@ -10,4 +10,5 @@ futures = "0.1"
 mdo = "0.3"
 mdo-future = "0.2"
 transaction = { version = "0.2", features = ["mdo"] }
+
 db = { path = "../db" }
