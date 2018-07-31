@@ -14,3 +14,4 @@ chrono = { version = "0.4", features = ["serde"] }
 mdo = "0.3"
 transaction = { version = "0.2", features = ["mdo"] }
 transaction-diesel = { version = "0.2" }
+#libsqlite3-sys = { version = "0.9", features = ["bundled"] }

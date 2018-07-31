@@ -42,10 +42,11 @@ WORKDIR /source
 RUN mkdir -p /source/.cargo
 # https://users.rust-lang.org/t/how-to-pass-cargo-linker-args/3163
 # https://www.raspberrypi.org/forums/viewtopic.php?t=11629
+# https://doc.rust-lang.org/cargo/reference/config.html
 RUN echo '[target.arm-unknown-linux-gnueabihf]' | tee -a /source/.cargo/config
 RUN echo 'linker = "arm-linux-gnueabihf-gcc"' | tee -a /source/.cargo/config
 RUN echo 'rustflags = [' | tee -a /source/.cargo/config
-RUN echo '  "-C", "link-args=-Xlinker -rpath=/usr/lib/arm-linux-gnueabihf",' | tee -a /source/.cargo/config
+RUN echo '  "-C", "link-args=-Xlinker -v",' | tee -a /source/.cargo/config
 RUN echo '  "-C", "link-arg=-march=armv6",' | tee -a /source/.cargo/config
 RUN echo '  "-C", "link-arg=-mfpu=vfp",' | tee -a /source/.cargo/config
 RUN echo '  "-C", "link-arg=-mfloat-abi=hard",' | tee -a /source/.cargo/config
@@ -58,9 +59,9 @@ RUN echo '  "-Z", "print-link-args",' | tee -a /source/.cargo/config
 RUN echo ']' | tee -a /source/.cargo/config
 
 ADD . /source
-RUN cargo build --target=arm-unknown-linux-gnueabihf -p server
+RUN cargo build -v --target=arm-unknown-linux-gnueabihf -p server
 RUN readelf --arch-specific ./target/arm-unknown-linux-gnueabihf/debug/server
-
+RUN readelf -d ./target/arm-unknown-linux-gnueabihf/debug/server
 
 # FROM arm32v6/alpine:latest
 # # RUN apk add --update --no-cache \
