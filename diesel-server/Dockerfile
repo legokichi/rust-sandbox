@@ -37,37 +37,29 @@ RUN rustup target add arm-unknown-linux-gnueabihf
 # cache
 RUN cargo search cargo
 
-RUN echo '#!/bin/bash' | tee -a /usr/local/sbin/arm-linux-gnueabihf-gcc-with-link-search
-RUN echo "arm-linux-gnueabihf-gcc -mcpu=arm1176jzf-s -march=armv6 -mfpu=vfp -mfloat-abi=hard -isystem/usr/include/arm-linux-gnueabihf -isystem/usr/include -L/usr/lib/arm-linux-gnueabihf -L/usr/lib \$@" | tee -a /usr/local/sbin/arm-linux-gnueabihf-gcc-with-link-search
-RUN chmod +x /usr/local/sbin/arm-linux-gnueabihf-gcc-with-link-search
-
-RUN echo '#!/bin/bash' | tee /usr/local/sbin/arm-linux-gnueabihf-g++-with-link-search
-RUN echo "arm-linux-gnueabihf-g++ -mcpu=arm1176jzf-s -march=armv6 -mfpu=vfp -mfloat-abi=hard -isystem/usr/include/arm-linux-gnueabihf -isystem/usr/include -L/usr/lib/arm-linux-gnueabihf -L/usr/lib \$@" | tee /usr/local/sbin/arm-linux-gnueabihf-g++-with-link-search
-RUN chmod +x /usr/local/sbin/arm-linux-gnueabihf-g++-with-link-search
-
-ENV CC_DIR /opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin
-ENV REAL_CC $CC_DIR/arm-linux-gnueabihf-gcc
-ENV CC arm-linux-gnueabihf-gcc-with-link-search
-# ENV CC_arm_unknown_linux_gnueabihf arm-linux-gnueabihf-gcc-with-link-search
-ENV CXX arm-linux-gnueabihf-g++-with-link-search
-# ENV CXX_arm_unknown_linux_gnueabihf=arm-linux-gnueabihf-g++-with-link-search
-ENV AR arm-linux-gnueabihf-gcc-ar
-ENV OBJCOPY arm-linux-gnueabihf-objcopy
-
-RUN ls -la /usr/lib/arm-linux-gnueabihf
-RUN ls -la /opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin
-
 WORKDIR /source
 
 RUN mkdir -p /source/.cargo
 # https://users.rust-lang.org/t/how-to-pass-cargo-linker-args/3163
 # https://www.raspberrypi.org/forums/viewtopic.php?t=11629
-RUN echo "[target.arm-unknown-linux-gnueabihf]" | tee -a /source/.cargo/config
-RUN echo "linker = \"arm-linux-gnueabihf-gcc-with-link-search\"" | tee -a /source/.cargo/config
+RUN echo '[target.arm-unknown-linux-gnueabihf]' | tee -a /source/.cargo/config
+RUN echo 'linker = "arm-linux-gnueabihf-gcc"' | tee -a /source/.cargo/config
+RUN echo 'rustflags = [' | tee -a /source/.cargo/config
+RUN echo '  "-C", "link-args=-Xlinker -rpath=/usr/lib/arm-linux-gnueabihf",' | tee -a /source/.cargo/config
+RUN echo '  "-C", "link-arg=-march=armv6",' | tee -a /source/.cargo/config
+RUN echo '  "-C", "link-arg=-mfpu=vfp",' | tee -a /source/.cargo/config
+RUN echo '  "-C", "link-arg=-mfloat-abi=hard",' | tee -a /source/.cargo/config
+RUN echo '  "-C", "link-arg=-isystem/usr/include/arm-linux-gnueabihf",' | tee -a /source/.cargo/config
+RUN echo '  "-C", "link-arg=-isystem/usr/include",' | tee -a /source/.cargo/config
+RUN echo '  "-C", "link-arg=-L/usr/lib/arm-linux-gnueabihf",' | tee -a /source/.cargo/config
+RUN echo '  "-C", "link-arg=-L/usr/lib",' | tee -a /source/.cargo/config
+RUN echo '  "-C", "link-arg=-Wl,--verbose",' | tee -a /source/.cargo/config
+RUN echo '  "-Z", "print-link-args",' | tee -a /source/.cargo/config
+RUN echo ']' | tee -a /source/.cargo/config
 
 ADD . /source
 RUN cargo build --target=arm-unknown-linux-gnueabihf -p server
-RUN readelf --arch-specific ./target/arm-unknown-linux-gnueabihf/release/server
+RUN readelf --arch-specific ./target/arm-unknown-linux-gnueabihf/debug/server
 
 
 # FROM arm32v6/alpine:latest
