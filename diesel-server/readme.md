@@ -438,3 +438,10 @@ File Attributes
   Tag_ABI_FP_16bit_format: IEEE 754
   Tag_DIV_use: Not allowed
 ```
+
+https://github.com/japaric/cross/pull/158/files
+
+```sh
+docker build --tag legokichi/server:latest .
+docker push legokichi/server:latest
+```
