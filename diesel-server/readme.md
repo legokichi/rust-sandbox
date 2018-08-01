@@ -1,3 +1,54 @@
+# containerization
+
+## x86_64
+
+musl static linking + alpine(libsqlite3)
+
+* https://pkgs.alpinelinux.org/package/edge/main/x86/sqlite-dev
+* https://hub.docker.com/r/library/alpine/tags/
+
+```sh
+docker build --tag x64server:latest --file Dockerfile-x64 .
+docker run \
+  --rm \
+  -v `pwd`:/conf \
+  -e DATABASE_URL=/conf/file:test.db \
+  -e HOST_URL=0.0.0.0:3000 \
+  -p 3000:3000 \
+  x64server
+```
+
+## armv6
+
+libsqlite3 static linking + raspbian(glibc)
+
+* https://github.com/japaric/cross/pull/158/files
+* https://hub.docker.com/r/raspbian/stretch/tags/
+
+
+```
+docker build --tag legokichi/piserver3 .
+docker push legokichi/piserver3:latest
+```
+
+```sh
+docker pull legokichi/piserver3:latest
+docker run -d \
+  --name=piserver3 \
+  --restart=always \
+  -v `pwd`:/conf \
+  -e DATABASE_URL=/conf/file:test.db \
+  -e HOST_URL=0.0.0.0:3000 \
+  -p 3000:3000 \
+  legokichi/piserver3
+docker logs piserver3
+docker stop piserver3
+```
+
+-------------------------------------
+
+# memo
+
 ## init
 
 * https://github.com/diesel-rs/diesel/tree/master/diesel_cli
@@ -402,6 +453,28 @@ scp apricot:/home/legokichi/Github/rust-sandbox/diesel-server/target/arm-unknown
 
 ```
 
+systemd systemctl setting
+
+```sh
+sudo touch /etc/systemd/system/torhttp.service
+cat<<'EOF'>>/etc/systemd/system/torhttp.service
+[Unit]
+Description=Tor Hidden HTTP Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi/github/torhttp/
+ExecStart=/home/pi/github/torhttp/server
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart torhttp
+```
 
 ```sh
 docker run -it --rm \
@@ -439,9 +512,3 @@ File Attributes
   Tag_DIV_use: Not allowed
 ```
 
-https://github.com/japaric/cross/pull/158/files
-
-```sh
-docker build --tag legokichi/server:latest .
-docker push legokichi/server:latest
-```

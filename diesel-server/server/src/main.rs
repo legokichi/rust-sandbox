@@ -53,7 +53,9 @@ fn main() {
     let _ = env_logger::try_init();
     dotenv::dotenv().ok();
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL is not set");
+    let host_url = std::env::var("HOST_URL").expect("HOST_URL is not set");
     println!("database_url: {}", database_url);
+    println!("host_url: {}", host_url);
     let srv = service::Posts::new(&database_url)
         .map_err(|_| unimplemented!())
         .wait()
@@ -113,7 +115,7 @@ fn main() {
                     Box::new(fut.map_err(actix_web::error::ErrorInternalServerError))
                 }
             })
-    }).bind("127.0.0.1:3000")
+    }).bind(&host_url)
         .unwrap()
         .run();
 }
