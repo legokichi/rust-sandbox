@@ -11,8 +11,7 @@ RUN apt-get install -y --no-install-recommends \
     pkg-config \
     libssl-dev
 
-RUN echo "deb [arch=armhf] http://archive.raspbian.org/raspbian jessie main contrib non-free"
-  | tee -a /etc/apt/sources.list
+RUN echo "deb [arch=armhf] http://archive.raspbian.org/raspbian jessie main contrib non-free" | tee -a /etc/apt/sources.list
 RUN wget https://archive.raspbian.org/raspbian.public.key -O - | apt-key add -
 RUN dpkg --add-architecture armhf
 RUN apt-get update
