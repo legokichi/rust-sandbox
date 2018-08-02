@@ -36,6 +36,7 @@ pub use error::ErrorKind;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct IndexTemplate {
     entries: Vec<Entry>,
+    prev: u64,
     limit: u64,
     offset: u64,
 }
@@ -82,7 +83,7 @@ fn main() {
                             soudane: o.soudane,
                             id: o.id,
                         }).collect();
-                        body =<< future::result(IndexTemplate { entries, offset: offset + limit, limit }.render()).map_err(Into::into);
+                        body =<< future::result(IndexTemplate { entries, prev: offset - limit, offset: offset + limit, limit }.render()).map_err(Into::into);
                         ret future::ok::<_, error::Error>(HttpResponse::Ok().body(body))
                     };
                     Box::new(fut.map_err(actix_web::error::ErrorInternalServerError))

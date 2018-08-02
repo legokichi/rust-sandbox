@@ -3,6 +3,7 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV PKG_CONFIG_ALLOW_CROSS 1
 
 RUN apt-get update -y
+RUN apt-get upgrade -y
 RUN apt-get install -y --no-install-recommends \
     binutils curl wget zip git vim \
     build-essential \
@@ -38,6 +39,7 @@ RUN mkdir -p /source/.cargo
 # https://users.rust-lang.org/t/how-to-pass-cargo-linker-args/3163
 # https://www.raspberrypi.org/forums/viewtopic.php?t=11629
 # https://doc.rust-lang.org/cargo/reference/config.html
+# https://github.com/aidanhs/rustnotes
 RUN echo '\
 [target.arm-unknown-linux-gnueabihf]\n\
 linker = "arm-linux-gnueabihf-gcc"\n\
@@ -46,20 +48,18 @@ rustflags = [\n\
   "-C", "link-arg=-march=armv6",\n\
   "-C", "link-arg=-mfpu=vfp",\n\
   "-C", "link-arg=-mfloat-abi=hard",\n\
-  "-C", "link-arg=-isystem/usr/include/arm-linux-gnueabihf",\n\
-  "-C", "link-arg=-isystem/usr/include",\n\
   "-C", "link-arg=-Wl,--verbose",\n\
-  "-C", "link-arg=-L/usr/lib",\n\
-  "-C", "link-arg=-L/usr/lib/arm-linux-gnueabihf",\n\
+  "-C", "link-arg=-L/opt/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/arm-linux-gnueabihf/libc/usr/lib/arm-linux-gnueabihf/",\n\
   "-Z", "print-link-args",\n\
 ]\n\
 ' | tee -a /source/.cargo/config
 
 ADD . /source
-RUN cargo build -v --target=arm-unknown-linux-gnueabihf -p server --release
-RUN readelf --arch-specific ./target/arm-unknown-linux-gnueabihf/release/server || echo "failed"
-RUN readelf -d ./target/arm-unknown-linux-gnueabihf/release/server || echo "failed"
-RUN ldd ./target/arm-unknown-linux-gnueabihf/release/server || echo "failed"
+RUN cargo build -vv --target=arm-unknown-linux-gnueabihf -p server --release
+RUN arm-linux-gnueabihf-readelf --arch-specific ./target/arm-unknown-linux-gnueabihf/release/server || echo "failed"
+RUN arm-linux-gnueabihf-readelf -d ./target/arm-unknown-linux-gnueabihf/release/server || echo "failed"
+RUN arm-linux-gnueabihf-ldd ./target/arm-unknown-linux-gnueabihf/release/server || echo "failed"
+RUN arm-linux-gnueabihf-strip ./target/arm-unknown-linux-gnueabihf/release/server
 
 FROM resin/rpi-raspbian
 WORKDIR /opt

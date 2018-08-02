@@ -27,22 +27,22 @@ libsqlite3 static linking + raspbian(glibc)
 
 
 ```
-docker build --tag legokichi/piserver3 .
-docker push legokichi/piserver3:latest
+docker build --tag legokichi/piserver:raspbian .
+docker push legokichi/piserver:raspbian
 ```
 
 ```sh
-docker pull legokichi/piserver3:latest
+docker pull legokichi/piserver:raspbian
 docker run -d \
-  --name=piserver3 \
+  --name=piserver \
   --restart=always \
   -v `pwd`:/conf \
   -e DATABASE_URL=/conf/file:test.db \
   -e HOST_URL=0.0.0.0:3000 \
   -p 3000:3000 \
-  legokichi/piserver3
-docker logs piserver3
-docker stop piserver3
+  legokichi/piserver:raspbian
+docker logs piserver
+docker stop piserver
 ```
 
 -------------------------------------

@@ -6,20 +6,30 @@
   <style>
     body { background-color: black; color:lightgray; }
     h1 { color: lime; }
-    textarea { width: 100%; background-color: black; color: lime;  }
-    input[type="text"] { background-color: black; color: lime; }
-    input[type="submit"] { background-color: black; color: lime; float: right; }
+    textarea { width: 100%; background-color: black; color: lime; border: 1px solid lightgray; }
+    input[type="text"] { background-color: black; color: lime; border: 1px solid lightgray; }
+    input[type="submit"] { background-color: black; color: lime; float: right; border: 1px solid lightgray; }
     ul { padding: 0px; }
     li { list-style: none; }
     article { color: lime; }
     small{ padding-left: 1em; color:lightgray; }
-    a, a:visited { color: lime; }
+    a, a:visited { color: lime; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    nav>a:first-of-type { float: left; }
+    nav>a:nth-of-type(2) { float: right; }
+    nav::after {
+      content: "";
+      display: block;
+      clear: both;
+    }
   </style>
 </head>
 <body>
-  <h1>The End of Internet</h1>
+  <header>
+    <h1><a href="/">The End of Internet</a></h1>
+  </header>
   <form method="post" action="/">
-    <p><textarea type="text" name="message" required maxlength="2048" cols="128" rows="4" placeholder="kill me baby"></textarea></p>
+    <p><textarea type="text" name="message" required maxlength="2048" cols="128" rows="4" placeholder="We are such stuff as dreams are made on, and our little life is rounded with a sleep."></textarea></p>
     <p><label>name: <input type="text" name="username" required maxlength="64" autocomplete="on" value="annonymas" /></label><input type="submit" value="submit" /></p>
   </form>
   <ul>
@@ -39,6 +49,9 @@
     </li>
     {% endfor %}
   </ul>
-  <a href="/?offset={{ offset }}&limit={{ limit }}">next</a>
+  <nav>
+    <a href="/?offset={{ prev }}&limit={{ limit }}">&lt;&lt;</a>
+    <a href="/?offset={{ offset }}&limit={{ limit }}">&gt;&gt;</a>
+  </nav>
 </body>
 </html>
