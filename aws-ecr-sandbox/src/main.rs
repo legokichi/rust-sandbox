@@ -25,8 +25,14 @@ use rusoto_credential::ProvideAwsCredentials;
 use rusoto_credential::EnvironmentProvider;
 use rusoto_cognito_identity::{CognitoIdentity, CognitoIdentityClient, GetOpenIdTokenForDeveloperIdentityInput};
 use rusoto_sts::{Sts, StsClient, AssumeRoleWithWebIdentityRequest};
+use rusoto_ecr::{Ecr, EcrClient, GetAuthorizationTokenRequest};
 
 fn main() {
+    let identity_pool_id = ::std::env::var("IDENTITY_POOL_ID").unwrap();
+    let ecr_repo_arn = ::std::env::var("ECR_REPO_ARN").unwrap();
+    let registory_id = ::std::env::var("REGISTORY_ID").unwrap();
+    let role_arn = ::std::env::var("ROLE_ARN").unwrap();
+    let custom_provider = ::std::env::var("IDENTITY_POOL_PROVIDER").unwrap();
     let region = Region::from_str(
         &::std::env::var("AWS_REGION")
             .expect(&format!("AWS_REGION is undefined in env"))
@@ -36,10 +42,9 @@ fn main() {
     let fut = mdo!{
         let logins = {
             let mut logins = HashMap::new();
-            logins.insert("login.yosuke_ino_devices".to_string(), "device_0".to_string());
+            logins.insert(custom_provider, "device_0".to_string());
             logins
         };
-        let identity_pool_id = "ap-northeast-1:118d78d4-a0f7-4fe8-b049-0f66cbe2b3d7".to_string();
         let cognito_cli = CognitoIdentityClient::new(region.clone());
         tokens =<< cognito_cli
             .get_open_id_token_for_developer_identity(
@@ -53,20 +58,22 @@ fn main() {
             .map_err(Into::into);
         let () = println!("{:?}", tokens);
         // do not start \n
-        let policy = r###"{
+        let policy = format!(r###"{{
 	"Version": "2012-10-17",
-	"Statement": [{
+	"Statement": [{{
 		"Effect": "Allow",
 		"Action": [
-			"ecr:GetAuthorizationToken", "ecr:BatchCheckLayerAvailability", "ecr:GetRepositoryPolicy", "ecr:DescribeRepositories", "ecr:ListImages", "ecr:DescribeImages", "ecr:DescribeRepositories", "ecr:BatchGetImage"
+			"ecr:GetAuthorizationToken", "ecr:BatchCheckLayerAvailability", "ecr:GetRepositoryPolicy",
+            "ecr:DescribeRepositories", "ecr:ListImages", "ecr:DescribeImages", "ecr:DescribeRepositories",
+            "ecr:BatchGetImage"
 		],
 		"Resource": "*"
-	}, {
+	}}, {{
 		"Effect": "Allow",
 		"Action": "ecr:GetDownloadUrlForLayer",
-		"Resource": "arn:aws:ecr:ap-northeast-1:746316586548:repository/test/yosuke-ino"
-	}]
-}"###.to_string();
+		"Resource": "{}"
+	}}]
+}}"###, ecr_repo_arn);
         let sts_cli = StsClient::new(region.clone());
         creds =<< sts_cli
             .assume_role_with_web_identity(
@@ -74,8 +81,8 @@ fn main() {
                     duration_seconds: None,
                     policy: Some(policy),
                     provider_id: None,
-                    role_arn: "arn:aws:iam::746316586548:role/yosuke_ino_devices_role".to_string(),
-                    role_session_name: "yosuke_ino_test".to_string(),
+                    role_arn,
+                    role_session_name: "dev".to_string(),
                     web_identity_token: tokens.token.unwrap(),
                 }
             )
@@ -91,6 +98,13 @@ fn main() {
             println!("export AWS_SESSION_TOKEN={}", session_token);
             println!("export AWS_REGION={}", region.name());
         };
+        let ecr_cli = EcrClient::new(region.clone());
+        data =<< ecr_cli
+            .get_authorization_token(GetAuthorizationTokenRequest{
+                registry_ids: Some(vec![registory_id])
+            })
+            .map_err(Into::into);
+        let () = println!("{:?}", data);
         ret ret(())
     };
     tokio::run(fut.map_err(|err: failure::Error| println!("{:?}", err)));
