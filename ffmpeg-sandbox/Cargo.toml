@@ -1,0 +1,7 @@
+[package]
+name = "ffmpeg-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+ffmpeg = { git = "https://github.com/meh/rust-ffmpeg" }
