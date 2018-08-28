@@ -1,0 +1,8 @@
+[package]
+name = "audio-input-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+cpal = "0.8"
+gust = "0.1"
