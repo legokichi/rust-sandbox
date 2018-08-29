@@ -10,6 +10,7 @@ extern crate rusoto_credential;
 extern crate rusoto_cognito_identity;
 extern crate rusoto_sts;
 extern crate rusoto_ecr;
+extern crate hyper_tls;
 
 use failure::Fail;
 use futures::future;
@@ -23,9 +24,11 @@ use rusoto_core::request::DispatchSignedRequest;
 use rusoto_core::request::HttpClient;
 use rusoto_credential::ProvideAwsCredentials;
 use rusoto_credential::EnvironmentProvider;
+use rusoto_credential::StaticProvider;
 use rusoto_cognito_identity::{CognitoIdentity, CognitoIdentityClient, GetOpenIdTokenForDeveloperIdentityInput};
 use rusoto_sts::{Sts, StsClient, AssumeRoleWithWebIdentityRequest};
 use rusoto_ecr::{Ecr, EcrClient, GetAuthorizationTokenRequest};
+
 
 fn main() {
     let identity_pool_id = ::std::env::var("IDENTITY_POOL_ID").unwrap();
@@ -33,19 +36,38 @@ fn main() {
     let registory_id = ::std::env::var("REGISTORY_ID").unwrap();
     let role_arn = ::std::env::var("ROLE_ARN").unwrap();
     let custom_provider = ::std::env::var("IDENTITY_POOL_PROVIDER").unwrap();
+    let aws_access_key_id = ::std::env::var("AWS_ACCESS_KEY_ID").unwrap();
+    let aws_secret_access_key = ::std::env::var("AWS_SECRET_ACCESS_KEY").unwrap();
     let region = Region::from_str(
         &::std::env::var("AWS_REGION")
             .expect(&format!("AWS_REGION is undefined in env"))
     )
         .expect(&format!("invalid AWS_REGION"));
-    
-    let fut = mdo!{
-        let logins = {
-            let mut logins = HashMap::new();
-            logins.insert(custom_provider, "device_0".to_string());
-            logins
-        };
-        let cognito_cli = CognitoIdentityClient::new(region.clone());
+    let logins = {
+        let mut logins = HashMap::new();
+        logins.insert(custom_provider, "device_0".to_string());
+        logins
+    };
+    let https_connector = ::hyper_tls::HttpsConnector::new(4).unwrap();
+    //let cognito_cli = CognitoIdentityClient::new(region.clone());
+    let cred_provider =
+        StaticProvider::new(aws_access_key_id, aws_secret_access_key, None, None);
+    let cognito_cli = CognitoIdentityClient::new_with(
+        HttpClient::from_connector(https_connector.clone()),
+        cred_provider.clone(),
+        region.clone(),
+    );
+    let sts_cli = StsClient::new_with(
+        HttpClient::from_connector(https_connector.clone()),
+        cred_provider.clone(),
+        region.clone(),
+    );
+    let ecr_cli = EcrClient::new_with(
+        HttpClient::from_connector(https_connector.clone()),
+        cred_provider.clone(),
+        region.clone(),
+    );
+    let fut: Box<Future<Item=(), Error=failure::Error> + Send + 'static> = Box::new(mdo!{
         tokens =<< cognito_cli
             .get_open_id_token_for_developer_identity(
                 GetOpenIdTokenForDeveloperIdentityInput{
@@ -74,7 +96,7 @@ fn main() {
 		"Resource": "{}"
 	}}]
 }}"###, ecr_repo_arn);
-        let sts_cli = StsClient::new(region.clone());
+        web_identity_token =<< future::result(tokens.token.ok_or(failure::err_msg("missing token")));
         creds =<< sts_cli
             .assume_role_with_web_identity(
                 AssumeRoleWithWebIdentityRequest{
@@ -83,12 +105,12 @@ fn main() {
                     provider_id: None,
                     role_arn,
                     role_session_name: "dev".to_string(),
-                    web_identity_token: tokens.token.unwrap(),
+                    web_identity_token,
                 }
             )
             .map_err(Into::into);
         let () = println!("{:?}", creds);
-        let creds = creds.credentials.unwrap();
+        creds =<< future::result(creds.credentials.ok_or(failure::err_msg("missing credentials")));
         let access_key_id = creds.access_key_id;
         let secret_access_key = creds.secret_access_key;
         let session_token  = creds.session_token;
@@ -98,7 +120,6 @@ fn main() {
             println!("export AWS_SESSION_TOKEN={}", session_token);
             println!("export AWS_REGION={}", region.name());
         };
-        let ecr_cli = EcrClient::new(region.clone());
         data =<< ecr_cli
             .get_authorization_token(GetAuthorizationTokenRequest{
                 registry_ids: Some(vec![registory_id])
@@ -106,6 +127,6 @@ fn main() {
             .map_err(Into::into);
         let () = println!("{:?}", data);
         ret ret(())
-    };
+    });
     tokio::run(fut.map_err(|err: failure::Error| println!("{:?}", err)));
 }
