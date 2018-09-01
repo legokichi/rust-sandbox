@@ -1,0 +1,17 @@
+[package]
+name = "alpine-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+tokio = "0.1"
+futures = "0.1"
+hyper = "0.12"
+hyper-tls = { version = "0.3", optional = true }
+hyper-rustls = { version = "0.14", optional = true }
+
+
+[features]
+default = ["rustls"]
+openssl = ["hyper-tls"]
+rustls = ["hyper-rustls"]
