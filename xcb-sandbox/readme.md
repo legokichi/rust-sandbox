@@ -8,3 +8,4 @@ sudo apt install libxcb-shape0-dev
 * functions - https://www.x.org/releases/X11R7.7/doc/libXext/shapelib.html
 * protocols docs - https://www.x.org/releases/X11R7.7/doc/xextproto/shape.html
 * samples - https://www.ssec.wisc.edu/~billh/bp/shape.c
+* jp-tutorial - http://xjman.dsl.gr.jp/X11R6/X11/
