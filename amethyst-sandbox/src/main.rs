@@ -1,4 +1,6 @@
 extern crate amethyst;
+extern crate glutin;
+extern crate gl;
 
 use amethyst::prelude::*;
 use amethyst::input::{is_close_requested, is_key_down}; 
@@ -11,6 +13,8 @@ impl<'a, 'b> State<GameData<'a, 'b>> for Example {
     fn handle_event(&mut self, _: StateData<GameData>, event: Event) -> Trans<GameData<'a, 'b>> {
         if is_close_requested(&event) || is_key_down(&event, VirtualKeyCode::Escape) {
             Trans::Quit
+        } else if is_key_down(&event, VirtualKeyCode::Return) {
+            println!("enter");
         } else {
             Trans::None
         }
