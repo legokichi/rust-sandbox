@@ -1,3 +1,13 @@
+## cargo profiler
+
+```bash
+cargo install -f cargo-profile
+cargo profiler callgrind --release
+cargo profiler cachegrind
+valgrind --tool=cachegrind --cachegrind-out-file=cachegrind.txt ./target/release/profiler-sandbox
+```
+
+## cpuprofiler
 * http://athemathmo.github.io/2016/09/14/tools-for-profiling-rust.html
 
 ```bash
