@@ -1,0 +1,26 @@
+{
+    // IntelliSense を使用して利用可能な属性を学べます。
+    // 既存の属性の説明をホバーして表示します。
+    // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "sourceLanguages": ["rust"],
+    "expressions": "simple",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch",
+            "preLaunchTask": "cargo build",
+            "internalConsoleOptions": "openOnSessionStart",
+            "program": "${workspaceRoot}/target/debug/debug-sandbox", "args": [],
+            // "program": "cargo", "args": ["run"],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "RUST_BACKTRACE": "1",
+                "RUST_LOG": "trace"
+            },
+            "sourceLanguages": ["rust"],
+            "expressions": "simple"
+        }
+    ]
+}
