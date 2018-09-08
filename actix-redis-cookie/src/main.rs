@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 #[macro_use]
 extern crate log;
 extern crate env_logger;
@@ -13,19 +14,27 @@ extern crate openssl;
 extern crate mdo;
 extern crate mdo_future;
 extern crate url;
-
+#[macro_use]
+extern crate redis_async;
+extern crate uuid;
 
 use actix::prelude::*;
-use actix_web::App;
-use actix_web::http::Method;
+use actix_web::dev::*;
+use actix_web::{App};
+use actix_web::http::{Method, header};
 use actix_web::server::HttpServer;
-use actix_web::middleware::session::SessionStorage;
 use actix_web::middleware::Logger;
+use actix_web::middleware::session::SessionStorage;
+use actix_web::middleware::csrf::CsrfFilter;
+use actix_web::middleware::cors::Cors;
 use actix_web::client::ClientConnector;
-use actix_redis::RedisSessionBackend;
+use actix_redis::{RedisSessionBackend, RedisActor};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod, SslConnector};
+use std::sync::Arc;
 
+mod middleware;
 mod route;
+mod logic;
 
 #[macro_export]
 macro_rules! import_env {
@@ -45,16 +54,9 @@ macro_rules! import_env {
     ()=>()
 }
 
-type Conn = ::actix::Addr<actix_web::client::ClientConnector>;
-
 pub struct Ctx {
-    conn: Conn,
-    client_id: String,
-    client_secret: String,
+    redis_addr: Arc<Addr<RedisActor>>,
 }
-
-
-
 
 fn main() {
     let _ = ::env_logger::try_init();
@@ -62,40 +64,91 @@ fn main() {
     import_env!{
         GITHUB_CLIENT_ID;
         GITHUB_CLIENT_SECRET;
+        TWITTER_CLIENT_ID;
+        TWITTER_CLIENT_SECRET;
+        ORIGIN: "https://localhost:8080";
+        REDIS_HOST: "localhost:6379";
         COOKIE_KEY: "d6b68bde465f9ed9c77804f4618a8b73";
+        PRIVATE_KEY_FILE: "localhost-key.pem";
+        CERTIFICATE_CHAIN_FILE: "localhost.pem";
     };
 
+    let sys = actix::System::new("actix_redis_ex");
+
+    let redis_addr = Arc::new(RedisActor::start(REDIS_HOST.as_ref()));
     let connector = {
         let ssl_conn = SslConnector::builder(SslMethod::tls()).unwrap().build();
         ClientConnector::with_connector(ssl_conn).start()
     };
     let ssl_builder = {
         let mut ssl_builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
-        ssl_builder.set_private_key_file("localhost-key.pem", SslFiletype::PEM).unwrap();
-        ssl_builder.set_certificate_chain_file("localhost.pem").unwrap();
+        ssl_builder.set_private_key_file(&PRIVATE_KEY_FILE, SslFiletype::PEM).unwrap();
+        ssl_builder.set_certificate_chain_file(&CERTIFICATE_CHAIN_FILE).unwrap();
         ssl_builder
     };
 
-    let sys = actix::System::new("actix_redis_ex");
-
     HttpServer::new(move || {
         let ctx = Ctx{
-            conn: connector.clone(),
-            client_id: GITHUB_CLIENT_ID.clone(),
-            client_secret: GITHUB_CLIENT_SECRET.clone(),
+            redis_addr: redis_addr.clone(),
         };
         App::with_state(ctx)
+            .middleware(CsrfFilter::new()
+                .allowed_origin(ORIGIN.as_str())
+            )
             .middleware(Logger::default())
             .middleware(SessionStorage::new(
-                RedisSessionBackend::new("localhost:6379", &[0; 32]).cookie_secure(true)
+                RedisSessionBackend::new(REDIS_HOST.as_str(), COOKIE_KEY.as_bytes())
+                    .cookie_secure(true)
             ))
+
+            .scope("/api", |app|{
+                app
+                    .middleware(
+                        Cors::build()
+                            .allowed_origin("*")
+                            .allowed_methods(vec![Method::GET])
+                            .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
+                            .finish()
+                    )
+                    .resource("/counter", |r|{
+                        // impl Future は with_async する必要あり
+                        r.method(Method::GET).with_async(route::api::get_counter);
+                        r.method(Method::POST).with_async(route::api::add_counter);
+                    })
+            })
             .route("/", Method::GET, route::index)
-            .route("/auth/sign/github", Method::POST, route::auth::github::post_auth_sign_github)
-            .route("/auth/cb/github", Method::GET, route::auth::github::get_auth_cb_github)
-            .route("/auth/logout", Method::POST, route::auth::logout)
-            .route("/auth/logout", Method::GET, route::auth::logout)
-            .route("/auth/login", Method::GET, route::auth::login)
-            .route("/content", Method::GET, route::check_auth(route::content::index))
+            .route("/logout", Method::GET, route::logout)
+            .scope("/", |app|{
+                app
+                    .middleware(middleware::check_login::CheckLoginMiddleware::default())
+                    .middleware(middleware::oauth2::OAuth2Middleware::new(
+                        connector.clone(),
+                        middleware::oauth2::OAuth2Config{
+                            client_id: GITHUB_CLIENT_ID.clone(),
+                            client_secret: GITHUB_CLIENT_SECRET.clone(),
+                            origin: ::url::Url::parse(&ORIGIN).unwrap(),
+                            scope: "user".into(),
+                            authorize_endpoint: "https://github.com/login/oauth/authorize".into(),
+                            access_token_endpoint: "https://github.com/login/oauth/access_token".into(),
+                            login_path: "/auth/login/github".into(),
+                            callback_path: "/auth/cb/github".into(),
+                        }
+                    ))
+                    .middleware(middleware::oauth2::OAuth2Middleware::new(
+                        connector.clone(),
+                        middleware::oauth2::OAuth2Config{
+                            client_id: TWITTER_CLIENT_ID.clone(),
+                            client_secret: TWITTER_CLIENT_SECRET.clone(),
+                            origin: ::url::Url::parse(&ORIGIN).unwrap(),
+                            scope: "user".into(),
+                            authorize_endpoint: "https://api.twitter.com/oauth/authorize".into(),
+                            access_token_endpoint: "https://api.twitter.com/oauth/access_token".into(),
+                            login_path: "/auth/login/twitter".into(),
+                            callback_path: "/auth/cb/twitter".into(),
+                        }
+                    ))
+                    .route("/content", Method::GET, route::content::index)
+            })
     })
         .bind_ssl("localhost:8080", ssl_builder)
         .unwrap()

@@ -12,11 +12,12 @@ serde_json = "1.0"
 actix = "0.7"
 actix-web = { version = "0.7", features = ["alpn"] }
 actix-redis = "0.5"
-futures = "0.1"
 redis-async = "0.4"
+futures = "0.1"
 openssl = "0.10"
 mdo = "0.3"
 mdo-future = "0.2"
 url = "1.7"
 url_serde = "0.2"
 failure = "0.1"
+uuid = { version = "0.7", features = ["serde", "v4"] }
