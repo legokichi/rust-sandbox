@@ -12,7 +12,11 @@ pub struct OAuth2Config {
     pub login_path: String,
     pub callback_path: String,
 }
-
+/// * https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/
+/// * アクセストークンに寿命はない - https://developer.github.com/v3/oauth_authorizations/#check-an-authorization
+/// * アクセストークンに有効期限を設けるべきかどうか - https://qiita.com/r7kamura/items/3e03471e02ea9ab5902a
+/// * https://docs.kii.com/ja/guides/cloudsdk/rest/managing-users/access-token/refresh-token/
+/// * https://auth0.com/blog/jp-refresh-tokens-what-are-they-and-when-to-use-them/
 pub struct OAuth2Middleware {
     connector: ::actix::Addr<::actix_web::client::ClientConnector>,
     client_id: String,
@@ -45,7 +49,7 @@ impl OAuth2Middleware {
             connector,
             client_id: config.client_id,
             client_secret: config.client_secret,
-            session_key: "access_token".into(),
+            session_key: "user_id".into(),
             origin: config.origin,
             login_path: config.login_path,
             callback_path: config.callback_path,
@@ -85,9 +89,11 @@ impl OAuth2Middleware {
         };
         let session = req.session();
         let session_key = self.session_key.clone();
+        let conn = self.connector.clone();
         let fut = mdo!{
             token =<< self.request_access_token(code, state);
-            () =<< future::result(session.set(&session_key, format!("{} {}", token.token_type, token.access_token))).from_err();
+            user_data =<< github_api::get_user_data(conn, &token);
+            () =<< future::result(session.set(&session_key, user_data.id)).from_err();
             ret ret(Some(HttpResponse::SeeOther().header("location", "/content").finish()))
         };
         return Ok(Started::Future(Box::new(fut)));

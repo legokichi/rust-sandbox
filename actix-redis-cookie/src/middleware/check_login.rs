@@ -10,7 +10,7 @@ pub struct CheckLoginMiddleware {
 impl Default for CheckLoginMiddleware {
     fn default() -> CheckLoginMiddleware {
         CheckLoginMiddleware {
-            session_key: "login_session".into(),
+            session_key: "user_id".into(),
             redirect_path: None,
         }
     }
