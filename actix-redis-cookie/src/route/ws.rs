@@ -3,6 +3,10 @@ use actix_web::ws;
 use std::sync::Arc;
 use actix_redis::RedisActor;
 
+/// redis_async と actix-redis の都合で、 
+/// publish は actix-redis を、
+/// subscribe は redis_async を使っている
+/// redis-rs や r2d2-redis に非同期 IO なんてなかった。
 pub struct WsActor{
     stopped: bool,
     conn: ::redis_async::client::pubsub::PubsubConnection,
