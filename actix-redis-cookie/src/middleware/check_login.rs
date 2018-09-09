@@ -10,7 +10,7 @@ pub struct CheckLoginMiddleware {
 impl Default for CheckLoginMiddleware {
     fn default() -> CheckLoginMiddleware {
         CheckLoginMiddleware {
-            session_key: "user_id".into(),
+            session_key: "authorized".into(),
             redirect_path: None,
         }
     }
@@ -18,7 +18,7 @@ impl Default for CheckLoginMiddleware {
 
 impl<S> Middleware<S> for CheckLoginMiddleware {
     fn start(&self, req: &HttpRequest<S>) -> Result<Started, ::actix_web::Error> {
-        if let Ok(Some(_)) = req.session().get::<String>(&self.session_key) {
+        if let Ok(Some(_)) = req.session().get::<bool>(&self.session_key) {
             return Ok(Started::Done);
         }
         req.session().clear();

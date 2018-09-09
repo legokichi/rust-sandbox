@@ -9,6 +9,15 @@ hello {}!
 <form action="/logout" method="post">
 <input type="submit" value="logout" />
 </form>
+<script>
+const ws = new WebSocket("wss://localhost:8080/ws");
+ws.addEventListener("error", console.error.bind(console));
+ws.addEventListener("close", console.log.bind(console));
+ws.addEventListener("open", ()=>{{
+    ws.addEventListener("message", console.log.bind(console));
+    ws.send("hello");
+}});
+</script>
 </html>"##, username);
     Ok(HttpResponse::Ok().body(body))
 }

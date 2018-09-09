@@ -2,6 +2,7 @@
 #[macro_use]
 extern crate log;
 extern crate env_logger;
+#[macro_use]
 extern crate failure;
 #[macro_use]
 extern crate serde_derive;
@@ -20,7 +21,7 @@ extern crate uuid;
 
 use actix::prelude::*;
 use actix_web::dev::*;
-use actix_web::{App};
+use actix_web::App;
 use actix_web::http::{Method, header};
 use actix_web::server::HttpServer;
 use actix_web::middleware::Logger;
@@ -64,8 +65,8 @@ fn main() {
     import_env!{
         GITHUB_CLIENT_ID;
         GITHUB_CLIENT_SECRET;
-        TWITTER_CLIENT_ID;
-        TWITTER_CLIENT_SECRET;
+        // TWITTER_CLIENT_ID;
+        // TWITTER_CLIENT_SECRET;
         ORIGIN: "https://localhost:8080";
         REDIS_HOST: "localhost:6379";
         COOKIE_KEY: "d6b68bde465f9ed9c77804f4618a8b73";
@@ -120,7 +121,6 @@ fn main() {
             .route("/logout", Method::GET, route::logout)
             .scope("/", |app|{
                 app
-                    .middleware(middleware::check_login::CheckLoginMiddleware::default())
                     .middleware(middleware::oauth2::OAuth2Middleware::new(
                         connector.clone(),
                         middleware::oauth2::OAuth2Config{
@@ -134,20 +134,23 @@ fn main() {
                             callback_path: "/auth/cb/github".into(),
                         }
                     ))
-                    .middleware(middleware::oauth2::OAuth2Middleware::new(
-                        connector.clone(),
-                        middleware::oauth2::OAuth2Config{
-                            client_id: TWITTER_CLIENT_ID.clone(),
-                            client_secret: TWITTER_CLIENT_SECRET.clone(),
-                            origin: ::url::Url::parse(&ORIGIN).unwrap(),
-                            scope: "user".into(),
-                            authorize_endpoint: "https://api.twitter.com/oauth/authorize".into(),
-                            access_token_endpoint: "https://api.twitter.com/oauth/access_token".into(),
-                            login_path: "/auth/login/twitter".into(),
-                            callback_path: "/auth/cb/twitter".into(),
-                        }
-                    ))
+                    // MUST after OAuth2Middleware
+                    .middleware(middleware::check_login::CheckLoginMiddleware::default())
+                    // .middleware(middleware::oauth2::OAuth2Middleware::new(
+                    //     connector.clone(),
+                    //     middleware::oauth2::OAuth2Config{
+                    //         client_id: TWITTER_CLIENT_ID.clone(),
+                    //         client_secret: TWITTER_CLIENT_SECRET.clone(),
+                    //         origin: ::url::Url::parse(&ORIGIN).unwrap(),
+                    //         scope: "user".into(),
+                    //         authorize_endpoint: "https://api.twitter.com/oauth/authorize".into(),
+                    //         access_token_endpoint: "https://api.twitter.com/oauth/access_token".into(),
+                    //         login_path: "/auth/login/twitter".into(),
+                    //         callback_path: "/auth/cb/twitter".into(),
+                    //     }
+                    // ))
                     .route("/content", Method::GET, route::content::index)
+                    .resource("/ws", |r| r.method(Method::GET).with_async(route::ws::index))
             })
     })
         .bind_ssl("localhost:8080", ssl_builder)

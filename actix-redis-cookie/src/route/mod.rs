@@ -1,6 +1,8 @@
 use mdo_future::future::*;
 use futures::future;
 use futures::future::*;
+use actix_web::dev::*;
+use actix::prelude::*;
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, AsyncResponder, Responder};
 use actix_web::error::ErrorInternalServerError;
 use actix_web::middleware::session::RequestSession;
@@ -12,6 +14,7 @@ use logic;
 
 pub mod content;
 pub mod api;
+pub mod ws;
 
 /// GET /
 pub fn index(req: HttpRequest<Ctx>) -> Result<HttpResponse, ::actix_web::Error> {

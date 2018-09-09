@@ -49,7 +49,7 @@ impl OAuth2Middleware {
             connector,
             client_id: config.client_id,
             client_secret: config.client_secret,
-            session_key: "user_id".into(),
+            session_key: "authorized".into(),
             origin: config.origin,
             login_path: config.login_path,
             callback_path: config.callback_path,
@@ -60,7 +60,7 @@ impl OAuth2Middleware {
     }
     fn handle_login<S>(&self, req: &HttpRequest<S>) -> Result<Started, ::actix_web::Error> {
         let mut redirect_url = self.origin.clone();
-        redirect_url.set_path(self.login_path.as_str());
+        redirect_url.set_path(self.callback_path.as_str());
         let mut authorize_url = ::url::Url::parse(self.authorize_endpoint.as_str()).map_err(ErrorInternalServerError)?;
         authorize_url.query_pairs_mut()
             .append_pair("client_id", self.client_id.as_str())
@@ -92,8 +92,10 @@ impl OAuth2Middleware {
         let conn = self.connector.clone();
         let fut = mdo!{
             token =<< self.request_access_token(code, state);
-            user_data =<< github_api::get_user_data(conn, &token);
-            () =<< future::result(session.set(&session_key, user_data.id)).from_err();
+            // user_data =<< github_api::get_user_data(conn, &token);
+            () =<< future::result(session.set(&session_key, true)).from_err();
+            u =<< future::result(session.get::<bool>(&session_key)).from_err();
+            let _ = println!("{:?}", u);
             ret ret(Some(HttpResponse::SeeOther().header("location", "/content").finish()))
         };
         return Ok(Started::Future(Box::new(fut)));
