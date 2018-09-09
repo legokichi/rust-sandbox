@@ -1,6 +1,6 @@
 use mdo_future::future::*;
 use futures::future;
-use futures::future::*;
+use futures::prelude::*;
 use actix_web::{HttpMessage, FromRequest, HttpRequest, HttpResponse, Query};
 use actix_web::http::Method;
 use actix_web::error::{ErrorInternalServerError, ErrorUnauthorized, ErrorBadRequest};

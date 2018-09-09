@@ -19,6 +19,7 @@ extern crate url;
 extern crate redis_async;
 extern crate uuid;
 
+use futures::prelude::*;
 use actix::prelude::*;
 use actix_web::dev::*;
 use actix_web::App;
@@ -32,6 +33,8 @@ use actix_web::client::ClientConnector;
 use actix_redis::{RedisSessionBackend, RedisActor};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod, SslConnector};
 use std::sync::Arc;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::str::FromStr;
 
 mod middleware;
 mod route;
@@ -56,7 +59,9 @@ macro_rules! import_env {
 }
 
 pub struct Ctx {
+    connector: ::actix::Addr<::actix_web::client::ClientConnector>,
     redis_addr: Arc<Addr<RedisActor>>,
+    redis_socket_addr: std::net::SocketAddr,
 }
 
 fn main() {
@@ -68,14 +73,14 @@ fn main() {
         // TWITTER_CLIENT_ID;
         // TWITTER_CLIENT_SECRET;
         ORIGIN: "https://localhost:8080";
-        REDIS_HOST: "localhost:6379";
+        REDIS_HOST: "127.0.0.1:6379";
         COOKIE_KEY: "d6b68bde465f9ed9c77804f4618a8b73";
         PRIVATE_KEY_FILE: "localhost-key.pem";
         CERTIFICATE_CHAIN_FILE: "localhost.pem";
     };
 
     let sys = actix::System::new("actix_redis_ex");
-
+    let redis_socket_addr: SocketAddr = REDIS_HOST.parse().unwrap();
     let redis_addr = Arc::new(RedisActor::start(REDIS_HOST.as_ref()));
     let connector = {
         let ssl_conn = SslConnector::builder(SslMethod::tls()).unwrap().build();
@@ -90,7 +95,9 @@ fn main() {
 
     HttpServer::new(move || {
         let ctx = Ctx{
+            connector: connector.clone(),
             redis_addr: redis_addr.clone(),
+            redis_socket_addr: redis_socket_addr.clone(),
         };
         App::with_state(ctx)
             .middleware(CsrfFilter::new()

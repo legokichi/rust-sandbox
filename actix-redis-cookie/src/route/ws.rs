@@ -5,43 +5,44 @@ use actix_redis::RedisActor;
 
 pub struct WsActor{
     stopped: bool,
-    redis_addr: Arc<Addr<RedisActor>>,
+    conn: ::redis_async::client::pubsub::PubsubConnection,
 }
-impl WsActor {
-}
+
 impl Actor for WsActor {
     type Context = ws::WebsocketContext<Self, Ctx>;
-    fn started<'a>(&'a mut self, ctx: &'a mut Self::Context){
-        let redis_addr = self.redis_addr.clone();
+    fn started(&mut self, ctx: &mut Self::Context){
         let addr = ctx.address();
         Arbiter::spawn(mdo!{
-            // http://d.hatena.ne.jp/hiroe_orz17/20120814/1344963552
-            resp =<< redis_addr.send(Command(resp_array!["SUBSCRIBE", "bloadcast"])).from_err();
-            _ =<< match resp {
-                Ok(RespValue::Array(arr)) =>{
-                    // actix-redis は pubsub できなかった
-                    // https://mitsuhiko.github.io/redis-rs/redis/#pubsub
-                    println!("started: {:?}", arr);
-                    Box::new(future::ok(()))
-                },
-                Ok(RespValue::SimpleString(text)) =>{
-                    Box::new(addr.send(Message(text.into())).map_err(|err| format_err!("{:?}", err))) as Box<dyn Future<Item=_, Error=_>>
-                },
-                _ => Box::new(future::err(format_err!("redis cache failed: {:?}", resp))) as Box<dyn Future<Item=_, Error=_>>,
-            };
+            stream =<< self.conn.subscribe("broadcast").map_err(|_| ());
+            () =<< stream.for_each(move |resp|{
+                let addr = addr.clone();
+                match resp {
+                    RespValue::BulkString(buf) => {
+                        Arbiter::spawn(mdo!{
+                            text: String =<< future::result(::std::str::from_utf8(&buf).map(Into::into)).map_err(|_| ());
+                            _ =<< addr.send(Message(text)).map_err(|_| ());
+                            ret ret(())
+                        });
+                        Ok(())
+                    },
+                    err @ _ => {
+                        error!("{:?}", err);
+                        Ok(())
+                    },
+                }
+            }).map_err(|_| ());
             ret ret(())
-        }.map_err(|err| error!("redis publish error {:?}", err)));
+        });
     }
 }
 #[derive(Message)]
-pub struct Message(pub String);
+struct Message(pub String);
 impl ::actix::Handler<Message> for WsActor {
     type Result = ();
-    fn handle(&mut self, msg: Message, ctx: &mut Self::Context){
+    fn handle(&mut self, msg: Message, ctx: &mut Self::Context) {
         ctx.text(msg.0);
     }
 }
-
 impl StreamHandler<ws::Message, ws::ProtocolError> for WsActor {
     fn handle(&mut self, msg: ws::Message, ctx: &mut Self::Context) {
         // process websocket messages
@@ -52,7 +53,7 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WsActor {
                 let redis = ctx.state().redis_addr.clone();
                 Arbiter::spawn(mdo!{
                     // http://d.hatena.ne.jp/hiroe_orz17/20120814/1344963552
-                    _ =<< redis.send(Command(resp_array!["PUBLISH", "bloadcast", text]));
+                    _ =<< redis.send(Command(resp_array!["PUBLISH", "broadcast", text]));
                     ret ret(())
                 }.map_err(|err| error!("redis publish error {:?}", err)));
             },
@@ -66,5 +67,12 @@ impl StreamHandler<ws::Message, ws::ProtocolError> for WsActor {
 }
 
 pub fn index(req: HttpRequest<Ctx>) -> impl Future<Item=HttpResponse, Error=::actix_web::Error> {
-    future::result(ws::start(&req, WsActor{ stopped: false, redis_addr: req.state().redis_addr.clone() }))
+    mdo!{
+        conn =<< ::redis_async::client::pubsub_connect(&req.state().redis_socket_addr)
+            .map_err(ErrorInternalServerError);
+        ret future::result(
+            ws::start(&req, WsActor{ stopped: false, conn })
+                .map_err(ErrorInternalServerError)
+        )
+    }
 }
