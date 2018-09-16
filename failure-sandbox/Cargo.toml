@@ -4,4 +4,7 @@ version = "0.1.0"
 authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
 
 [dependencies]
-failure = "1.0"
+failure = "*"
+serde_derive = "*"
+serde = "*"
+serde_json = "*"

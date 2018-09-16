@@ -3,25 +3,17 @@ use std::fmt::Display;
 use std::io;
 
 use failure::{Backtrace, Context, Fail};
-use url::ParseError;
 
 #[derive(Debug)]
 pub struct Error {
     inner: Context<ErrorKind>,
 }
 
-#[derive(Debug, Fail)]
+#[derive(Debug, Fail, Serialize, Deserialize)]
+#[serde(tag = "type")]
 pub enum ErrorKind {
-    #[fail(display = "A module runtime error occurred.")]
-    ModuleRuntime,
-    #[fail(display = "An IO error occurred.")]
-    Io,
-    #[fail(display = "Cannot parse uri")]
-    UrlParse,
-    #[fail(display = "An error in the management http client occurred.")]
-    HttpMgmt,
-    #[fail(display = "Missing host")]
-    NoHost,
+    #[fail(display = "An IO error occurred. {}", _0)]
+    Io { message: String, some_args: Vec<i32>  },
 }
 
 impl Fail for Error {
@@ -64,26 +56,3 @@ impl From<Context<ErrorKind>> for Error {
     }
 }
 
-impl From<io::Error> for Error {
-    fn from(error: io::Error) -> Error {
-        Error {
-            inner: error.context(ErrorKind::Io),
-        }
-    }
-}
-
-impl From<ParseError> for Error {
-    fn from(error: ParseError) -> Error {
-        Error {
-            inner: error.context(ErrorKind::UrlParse),
-        }
-    }
-}
-
-impl From<reqwest::Error> for Error {
-    fn from(error: reqwest::Error) -> Error {
-        Error {
-            inner: error.context(ErrorKind::HttpMgmt),
-        }
-    }
-}
