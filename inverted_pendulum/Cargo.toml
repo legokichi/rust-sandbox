@@ -1,0 +1,8 @@
+[package]
+name = "inverted_pendulum"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+ndarray = "0.12"
+ndarray-rand = "0.8"
