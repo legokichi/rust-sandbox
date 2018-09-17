@@ -6,3 +6,15 @@ authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
 [dependencies]
 ndarray = "0.12"
 ndarray-rand = "0.8"
+
+[[bin]]
+# cargo run --bin single_pendulum_model
+name = "single_pendulum_model"
+path = "src/single_pendulum_model.rs"
+
+
+[[bin]]
+# cargo run --bin inverted_pendulum
+name = "inverted_pendulum"
+path = "src/inverted_pendulum_model.rs"
+

@@ -10,10 +10,10 @@ const LENGTH: f64 = 1_f64; // m
 const FRICTION_LOSS: f64 = 0.1_f64;
 
 /// 単振り子の運動方程式
-/// d2θ/dt2 = -(g/l)θ
-fn aceralation_of_theta1(current_theta: f64) -> f64 {
-    let aceralation_of_theta = GRAVITATIONAL_ACCELERATION / LENGTH * current_theta.sin();
-    aceralation_of_theta
+/// d2θ/dt2 = -(g/l)sinθ
+fn acceleration_of_theta1(current_theta: f64) -> f64 {
+    let acceleration_of_theta = GRAVITATIONAL_ACCELERATION / LENGTH * current_theta.sin();
+    acceleration_of_theta
 }
 
 /// http://godfoot.world.coocan.jp/furiko.htm
