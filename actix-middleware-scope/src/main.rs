@@ -30,13 +30,13 @@ impl<S> Middleware<S> for MyMiddleware {
 fn main() -> Result<(), ::failure::Error> {
     ::env_logger::init();
     actix_web::server::new(||{
-        App::new()
+        let app1 = App::new()
             .middleware(Logger::default())
-            .scope("/foo", |scope|{
-                scope
-                    .middleware(MyMiddleware)
-                    .route("/", Method::GET, |()|{ HttpResponse::Ok().body("foo") })
-            })
+            .middleware(MyMiddleware)
+            .prefix("/foo")
+            .route("", Method::GET, |()|{ HttpResponse::Ok().body("foo") })
+            .boxed();
+        let app2 = App::new()
             .route("/", Method::GET, |()|{ HttpResponse::Ok().body("ok") })
             .default_resource(|r| {
                 // GET 404
@@ -50,6 +50,8 @@ fn main() -> Result<(), ::failure::Error> {
                     .filter(pred::Not(pred::Get()))
                     .f(|_req| HttpResponse::MethodNotAllowed());
             })
+            .boxed();
+        vec![app1, app2]
     })
         .bind(format!("0.0.0.0:3000"))
         .unwrap()
