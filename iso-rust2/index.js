@@ -1,4 +1,1 @@
-window.document.addEventListener("DOMContentLoaded", async ()=>{
-	const { main } = await import("./js_hello_world");
-	main();
-});
+import("./iso_rust2").then(o => o.main());
