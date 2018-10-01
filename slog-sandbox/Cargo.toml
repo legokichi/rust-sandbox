@@ -1,0 +1,18 @@
+[package]
+name = "slog-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
+
+
+[dependencies]
+log = "0.3"
+slog = "2"
+slog-json = "2"
+slog-term = "2"
+slog-atomic = "2"
+slog-async = "2"
+tokio = { version = "0.1", features = ["async-await-preview"] }
+tokio-timer = "0.2"
+tokio-async-await = "0.1"
+futures = "0.1"
