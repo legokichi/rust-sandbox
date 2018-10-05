@@ -1,0 +1,13 @@
+[package]
+name = "hyper-server-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+futures = "0.1"
+tokio = "0.1"
+tokio-timer = "0.2"
+hyper = "0.12"
+env_logger = "0.5"
+
