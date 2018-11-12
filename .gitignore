@@ -1,2 +1,5 @@
+.vscode/
 target/
 Cargo.lock
+.env
+node_modules/

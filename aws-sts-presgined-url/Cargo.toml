@@ -1,0 +1,21 @@
+[package]
+name = "aws-sts-presgined-url"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+rusoto_core = "0"
+rusoto_cognito_identity = "0"
+rusoto_sts = "0"
+rusoto_s3 = "0"
+rusoto_credential = "*"
+futures = "0.1"
+tokio = "0.1"
+failure = "0.1"
+mdo = "*"
+mdo-future = "*"
+envy = "0.3"
+serde_derive = "1"
+serde = "1"
+dotenv = "*"

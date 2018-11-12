@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
 
 [dependencies]
-futures = "0.1.16"
-rusoto_core = { path = "../rusoto/rusoto/core" }
-rusoto_s3 = { path = "../rusoto/rusoto/services/s3" }
+futures = "0.1"
+rusoto_core = "0"
+rusoto_s3 = "0"
 

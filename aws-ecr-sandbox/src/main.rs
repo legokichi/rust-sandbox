@@ -11,6 +11,11 @@ extern crate rusoto_cognito_identity;
 extern crate rusoto_sts;
 extern crate rusoto_ecr;
 extern crate hyper_tls;
+extern crate dotenv;
+extern crate envy;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 
 use failure::Fail;
 use futures::future;
@@ -30,49 +35,52 @@ use rusoto_sts::{Sts, StsClient, AssumeRoleWithWebIdentityRequest};
 use rusoto_ecr::{Ecr, EcrClient, GetAuthorizationTokenRequest};
 
 
+
+#[derive(Deserialize, Debug, Clone)]
+struct Config {
+    identity_pool_id: String,
+    identity_pool_provider: String,
+    ecr_repo_arn: String,
+    registory_id: String,
+    role_arn: String,
+    custom_provider: String,
+    aws_access_key_id: String,
+    aws_secret_access_key: String,
+    aws_region: String,
+}
+
 fn main() {
-    let identity_pool_id = ::std::env::var("IDENTITY_POOL_ID").unwrap();
-    let ecr_repo_arn = ::std::env::var("ECR_REPO_ARN").unwrap();
-    let registory_id = ::std::env::var("REGISTORY_ID").unwrap();
-    let role_arn = ::std::env::var("ROLE_ARN").unwrap();
-    let custom_provider = ::std::env::var("IDENTITY_POOL_PROVIDER").unwrap();
-    let aws_access_key_id = ::std::env::var("AWS_ACCESS_KEY_ID").unwrap();
-    let aws_secret_access_key = ::std::env::var("AWS_SECRET_ACCESS_KEY").unwrap();
-    let region = Region::from_str(
-        &::std::env::var("AWS_REGION")
-            .expect(&format!("AWS_REGION is undefined in env"))
-    )
-        .expect(&format!("invalid AWS_REGION"));
+    dotenv::dotenv().ok();
+    let config = envy::from_env::<Config>().unwrap();
     let logins = {
         let mut logins = HashMap::new();
-        logins.insert(custom_provider, "device_0".to_string());
+        logins.insert(config.custom_provider.clone(), "device_0".to_string());
         logins
     };
     let https_connector = ::hyper_tls::HttpsConnector::new(4).unwrap();
-    //let cognito_cli = CognitoIdentityClient::new(region.clone());
     let cred_provider =
-        StaticProvider::new(aws_access_key_id, aws_secret_access_key, None, None);
+        StaticProvider::new(config.aws_access_key_id.clone(), config.aws_secret_access_key.clone(), None, None);
     let cognito_cli = CognitoIdentityClient::new_with(
         HttpClient::from_connector(https_connector.clone()),
         cred_provider.clone(),
-        region.clone(),
+        Region::default(),
     );
     let sts_cli = StsClient::new_with(
         HttpClient::from_connector(https_connector.clone()),
         cred_provider.clone(),
-        region.clone(),
+        Region::default(),
     );
     let ecr_cli = EcrClient::new_with(
         HttpClient::from_connector(https_connector.clone()),
         cred_provider.clone(),
-        region.clone(),
+        Region::default(),
     );
     let fut: Box<Future<Item=(), Error=failure::Error> + Send + 'static> = Box::new(mdo!{
         tokens =<< cognito_cli
             .get_open_id_token_for_developer_identity(
                 GetOpenIdTokenForDeveloperIdentityInput{
                     identity_id: None,
-                    identity_pool_id,
+                    identity_pool_id: config.identity_pool_id.clone(),
                     logins,
                     token_duration: None,
                 }
@@ -95,7 +103,7 @@ fn main() {
 		"Action": "ecr:GetDownloadUrlForLayer",
 		"Resource": "{}"
 	}}]
-}}"###, ecr_repo_arn);
+}}"###, config.ecr_repo_arn.clone());
         web_identity_token =<< future::result(tokens.token.ok_or(failure::err_msg("missing token")));
         creds =<< sts_cli
             .assume_role_with_web_identity(
@@ -103,7 +111,7 @@ fn main() {
                     duration_seconds: None,
                     policy: Some(policy),
                     provider_id: None,
-                    role_arn,
+                    role_arn: config.role_arn.clone(),
                     role_session_name: "dev".to_string(),
                     web_identity_token,
                 }
@@ -118,11 +126,11 @@ fn main() {
             println!("export AWS_ACCESS_KEY_ID={}", access_key_id);
             println!("export AWS_SECRET_ACCESS_KEY={}", secret_access_key);
             println!("export AWS_SESSION_TOKEN={}", session_token);
-            println!("export AWS_REGION={}", region.name());
+            println!("export AWS_REGION={}", Region::default().name());
         };
         data =<< ecr_cli
             .get_authorization_token(GetAuthorizationTokenRequest{
-                registry_ids: Some(vec![registory_id])
+                registry_ids: Some(vec![config.registory_id.clone()])
             })
             .map_err(Into::into);
         let () = println!("{:?}", data);

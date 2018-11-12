@@ -1,0 +1,17 @@
+[package]
+name = "aws-lambda-invoke"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+
+[dependencies]
+rusoto_core = "0.35"
+rusoto_lambda = "0.35"
+# rusoto_core = { path="../../rusoto/rusoto/core" }
+# rusoto_lambda = { path="../../rusoto/rusoto/services/lambda" }
+serde = "1"
+serde_json = "1"
+serde_derive = "1"
+tokio = "0.1"
+futures = "0.1"
+env_logger = "*"
+base64 = "*"
