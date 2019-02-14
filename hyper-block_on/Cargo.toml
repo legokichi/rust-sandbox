@@ -1,0 +1,11 @@
+[package]
+name = "hyper-block_on"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+hyper = "0.12"
+tokio = "0.1"
+futures = "0.1"
+

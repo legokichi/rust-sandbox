@@ -2,9 +2,23 @@
 name = "quickcheck-sandbox"
 version = "0.1.0"
 authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
 
 [dependencies]
+diesel = { version = "1", features = ["sqlite", "chrono", "uuid", "serde_json"] }
+chrono = { version = "0.4", features = ["serde"] }
+libsqlite3-sys = { version = "0.9", features = ["bundled"] }
+log = "0.4"
+failure = "0.1"
+serde = "1"
+serde_derive = "1"
+serde_json = "1"
+try_from = "0.3.2"
 
 [dev-dependencies]
+envy = "0.3"
+dotenv = "0.13"
+env_logger = "0.6"
 quickcheck = "0.6"
 proptest   = "0.8"
+

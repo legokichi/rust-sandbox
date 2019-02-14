@@ -13,7 +13,7 @@ use std::time::Duration;
 
 fn main() {
     let (tx, rx) = channel::<()>();
-    let server = Server::bind(&([127, 0, 0, 1], 3000).into())
+    let server = Server::bind(&([0, 0, 0, 0], 3000).into())
         .serve(move || service_fn(|req: Request<Body>|-> Box<Future<Item=Response<Body>, Error=hyper::Error> + Send + 'static>{
             let mut res = Response::new(Body::empty()); 
             match (req.method(), req.uri().path()) {
@@ -32,7 +32,7 @@ fn main() {
         .map_err(|err| eprintln!("timer error: {:?}", err))
         .and_then(|()|{
             Client::new()
-                .get("http://127.0.0.1:3000".parse().unwrap())
+                .get("http://0.0.0.0:3000".parse().unwrap())
                 .map_err(|err| eprintln!("client error: {:?}", err))
                 .and_then(|res| {
                     println!("status: {}", res.status());
