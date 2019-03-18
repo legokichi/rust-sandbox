@@ -21,7 +21,7 @@ fn main() {
         access: egg_mode::KeyPair::new(config.access_token, config.access_secret),
     };
     loop{
-        let (_, res) = block_on_all(egg_mode::tweet::liked_by(config.screen_name, &token).with_page_size(1024).start()).unwrap();
+        let (_, res) = block_on_all(egg_mode::tweet::liked_by(&config.screen_name, &token).with_page_size(1024).start()).unwrap();
         for tw in &res {
             if let &Some(ref user) = &tw.user {
                 let created_at = {

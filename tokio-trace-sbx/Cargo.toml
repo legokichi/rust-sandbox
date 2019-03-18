@@ -1,0 +1,14 @@
+[package]
+name = "tokio-trace-sbx"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+# futures = "0.1"
+# tokio = { git = "https://github.com/tokio-rs/tokio", branch = "master" }
+tokio-trace = { git = "https://github.com/tokio-rs/tokio", branch = "master" }
+# tokio-trace-fmt = { git = "https://github.com/tokio-rs/tokio-trace-nursery", branch = "master" }
+# tokio-trace-futures = { git = "https://github.com/tokio-rs/tokio-trace-nursery", branch = "master" }
+# tokio-trace-subscriber = { git = "https://github.com/tokio-rs/tokio-trace-nursery", branch = "master" }
+tokio-trace-env-logger = { git = "https://github.com/tokio-rs/tokio-trace-nursery", branch = "master" }

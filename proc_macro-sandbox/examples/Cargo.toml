@@ -1,0 +1,13 @@
+[package]
+name = "examples"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+foo = {path="../foo"}
+foo-derive = {path="../foo-derive"}
+
+[[bin]]
+name = "example"
+

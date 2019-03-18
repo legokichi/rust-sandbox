@@ -1,0 +1,12 @@
+[package]
+name = "base64-serde-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+base64 = "*"
+base64-serde = "*"
+serde = "*"
+serde_json = "*"
+serde_derive = "*"

@@ -1,345 +1,422 @@
-use std::collections::{HashMap, HashSet};
-use std::fmt::Debug;
-use std::hash::Hash;
-
-trait Environment {
-    type Action: Action;
-    type State: State;
-    fn reset(&mut self) -> ();
-    fn current_state(&self) -> Self::State;
-    fn current_step(&self) -> usize;
-    fn step(&mut self, action: &Self::Action) -> (f64, bool);
-    fn all_states(&self) -> HashSet<Self::State>;
-    fn all_actions(&self) -> HashSet<Self::Action>;
-}
-trait State: Debug + Copy + Clone + PartialEq + Eq + PartialOrd + Ord + Hash {}
-trait Action: Debug + Copy + Clone + PartialEq + Eq + PartialOrd + Ord + Hash {}
-trait Agent {
-    type Environment: Environment;
-    fn policy(
-        &self,
-        state: &<Self::Environment as Environment>::State,
-        actions: &HashSet<<Self::Environment as Environment>::Action>,
-    ) -> <Self::Environment as Environment>::Action;
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-struct Position {
-    row: usize,
-    column: usize,
-}
-impl State for Position {}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum MoveAction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-impl Action for MoveAction {}
-
-// 地形効果
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum Cell {
-    Ordinary,
-    Damage__,
-    Reward__,
-    Block___,
-}
-
-/// 地形効果つきの場の平面上の一点
-/// (row=0, column=0)
-/// +------> Column
-/// |
-/// |
-/// v Row
-#[derive(Debug, Clone)]
-struct Field {
-    grid: Vec<Vec<Cell>>,
-    current: Position,
-    start: Position,
-    max_episode_steps: usize,
-    steps: usize,
-    slip_rate: f64,
-}
-impl Field {
-    fn new(
-        grid: Vec<Vec<Cell>>,
-        start: Position,
-        max_episode_steps: usize,
-        slip_rate: f64,
-    ) -> Self {
-        Self {
-            grid,
-            current: start,
-            start,
-            max_episode_steps,
-            steps: 0,
-            slip_rate,
+mod prelude {
+    pub use std::collections::{HashMap, HashSet};
+    pub use std::fmt::Debug;
+    pub use std::hash::Hash;
+    pub trait State: Debug + Copy + Clone + PartialEq + Eq + PartialOrd + Ord + Hash {}
+    pub trait Action: Debug + Copy + Clone + PartialEq + Eq + PartialOrd + Ord + Hash {}
+    pub trait Environment {
+        type Action: Action;
+        type State: State;
+        fn reset(&mut self) -> ();
+        fn current_state(&self) -> Self::State;
+        fn current_step(&self) -> usize;
+        fn step(&mut self, action: Self::Action) -> (f64, bool);
+        fn action_space(&self) -> HashSet<Self::Action>;
+        fn state_space(&self) -> HashSet<Self::State>;
+    }
+    pub trait Agent {
+        type Environment: Environment;
+        fn new<T>(epsilon: f64, env: &Self::Environment, options: T) -> Self;
+        fn initialize(&mut self, experiences: ());
+        fn estimate(
+            &self,
+            state: &<Self::Environment as Environment>::State,
+        ) -> HashMap<<Self::Environment as Environment>::Action, f64>;
+        fn argmax(
+            estimates: &HashMap<<Self::Environment as Environment>::Action, f64>,
+        ) -> (<Self::Environment as Environment>::Action, f64) {
+            use rand::distributions::Distribution; ;
+            use rand::distributions::WeightedIndex;
+            let mut rng = rand::thread_rng();
+            let probs = estimates.iter().collect::<Vec<_>>();
+            let dist = WeightedIndex::new(probs.iter().map(|(_, v)| *v)).unwrap();
+            let (action, value) = probs[dist.sample(&mut rng)];
+            (*action, *value)
+        }
+        fn update(&mut self, experiences: (), gamma: f64);
+        fn epsilon(&self) -> f64;
+        fn actions(&self) -> &[<Self::Environment as Environment>::Action];
+        fn policy(
+            &self,
+            state: &<Self::Environment as Environment>::State,
+        ) -> (
+            <Self::Environment as Environment>::Action,
+            Option<HashMap<<Self::Environment as Environment>::Action, f64>>,
+        ) {
+            if !(rand::random::<f64>() < self.epsilon()) {
+                // 報酬獲得行動
+                let action_probs = self.estimate(state);
+                let (action, _) = Self::argmax(&action_probs);
+                return (action, Some(action_probs));
+            }
+            // 探索行動
+            use rand::seq::SliceRandom;
+            // ランダムアクション
+            let action = *self.actions().choose(&mut rand::thread_rng()).unwrap();
+            // println!("探索行動: {:?}", some_action);
+            (action, None)
         }
     }
-    fn current_position(&self) -> Position {
-        self.current
+    pub struct Experience<T: Trainer> {
+        pub episode: usize,
+        pub prev_step: usize,
+        pub prev_state: <<T as Trainer>::Environment as Environment>::State,
+        pub dist: Option<HashMap<<<T as Trainer>::Environment as Environment>::Action, f64>>,
+        pub action: <<T as Trainer>::Environment as Environment>::Action,
+        pub next_step: usize,
+        pub next_state: <<T as Trainer>::Environment as Environment>::State,
+        pub reward: f64,
     }
-    fn current_cell(&self) -> Cell {
-        self.grid[self.current.row][self.current.column]
+    pub trait Trainer: Sized {
+        type Environment: Environment;
+        type Agent: Agent<Environment = Self::Environment>;
+        fn agent(&self) -> &Self::Agent;
+        fn play(&mut self, env: &mut Self::Environment, episode_count: usize) {
+            let mut experiences = vec![];
+            for episode in 0..episode_count {
+                env.reset();
+                self.on_episode_start();
+                let mut experience = vec![];
+                loop {
+                    let prev_step = env.current_step();
+                    let prev_state = env.current_state();
+                    self.on_before_step(episode, prev_step, &prev_state);
+                    let (action, dist) = self.agent().policy(&prev_state);
+                    let (reward, done) = env.step(action);
+                    let next_step = env.current_step();
+                    let next_state = env.current_state();
+                    let expr = Experience {
+                        episode,
+                        prev_step,
+                        prev_state,
+                        dist,
+                        action,
+                        next_step,
+                        next_state,
+                        reward,
+                    };
+                    self.on_after_step(&expr);
+                    experience.push(expr);
+                    // ここでトレーニング
+
+                    if done {
+                        break;
+                    }
+                }
+                self.on_episode_end(&experience);
+                experiences.push(experience);
+            }
+        }
+        fn on_episode_start(&mut self);
+        fn on_episode_end(&mut self, experiences: &[Experience<Self>]);
+        fn on_before_step(
+            &mut self,
+            episode: usize,
+            prev_step: usize,
+            prev_state: &<Self::Environment as Environment>::State,
+        );
+        fn on_after_step(&mut self, experiences: &Experience<Self>);
     }
-    fn row_size(&self) -> usize {
-        self.grid.len()
+}
+mod frozen_lake {
+    use super::prelude::*;
+    #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub struct Position {
+        pub row: usize,
+        pub column: usize,
     }
-    fn column_size(&self) -> usize {
-        self.grid[0].len()
+    impl State for Position {}
+
+    #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub enum Move {
+        Up,
+        Down,
+        Left,
+        Right,
     }
-    fn for_each(&self, mut cb: impl FnMut((usize, usize), Cell) -> ()) -> () {
-        self.grid.iter().enumerate().for_each(|(row, columns)| {
-            columns.iter().enumerate().for_each(|(column, &cell)| {
-                cb((row, column), cell);
+    impl Move {
+        fn opposite(&self) -> Move {
+            use Move::*;
+            match self {
+                Up => Down,
+                Down => Up,
+                Left => Right,
+                Right => Left,
+            }
+        }
+    }
+    impl Action for Move {}
+
+    // 地形効果
+    #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+    pub enum Cell {
+        Ordinary,
+        Damage,
+        Reward,
+        Block,
+    }
+
+    /// 地形効果つきの場の平面上の一点
+    /// (row=0, column=0)
+    /// +------> Column
+    /// |
+    /// |
+    /// v Row
+    #[derive(Debug, Clone)]
+    pub struct Field {
+        pub grid: Vec<Vec<Cell>>,
+        pub current: Position,
+        pub start: Position,
+        pub default_reward: f64,
+        pub max_episode_steps: usize,
+        pub step_count: usize,
+    }
+    impl Field {
+        fn new(grid: Vec<Vec<Cell>>, start: Position, max_episode_steps: usize) -> Self {
+            Self {
+                grid,
+                current: start,
+                start,
+                default_reward: -0.04,
+                max_episode_steps,
+                step_count: 0,
+            }
+        }
+        fn current_position(&self) -> Position {
+            self.current
+        }
+        fn current_cell(&self) -> Cell {
+            self.grid[self.current.row][self.current.column]
+        }
+        fn row_size(&self) -> usize {
+            self.grid.len()
+        }
+        fn column_size(&self) -> usize {
+            self.grid[0].len()
+        }
+        fn for_each(&self, mut cb: impl FnMut((usize, usize), Cell) -> ()) -> () {
+            self.grid.iter().enumerate().for_each(|(row, columns)| {
+                columns.iter().enumerate().for_each(|(column, &cell)| {
+                    cb((row, column), cell);
+                });
             });
-        });
+        }
+    }
+    impl Environment for Field {
+        type Action = Move;
+        type State = Position;
+        fn reset(&mut self) {
+            self.current = self.start;
+            self.step_count = 0;
+        }
+        fn current_step(&self) -> usize {
+            self.step_count
+        }
+        fn step(&mut self, action: Move) -> (f64, bool) {
+            self.step_count += 1;
+            use Move::*;
+            let (row, column) = match action {
+                Up => (self.current.row - 1, self.current.column),
+                Down => (self.current.row + 1, self.current.column),
+                Left => (self.current.row, self.current.column - 1),
+                Right => (self.current.row, self.current.column + 1),
+            };
+            if row < self.row_size() && column < self.column_size() {
+                // 進めるかどうか確認
+                if self.grid[row][column] != Block {
+                    // 進めた
+                    self.current.row = row;
+                    self.current.column = column;
+                }
+            }
+            use Cell::*;
+            match self.current_cell() {
+                // default_reward = -0.04 は歩き回っていると（トータルの）報酬が減っていくことを意味する
+                Ordinary => (
+                    self.default_reward,
+                    self.step_count >= self.max_episode_steps,
+                ),
+                Reward => (1.0_f64, true),
+                Damage => (-1.0_f64, true),
+                Block => unreachable!(),
+            }
+        }
+        fn current_state(&self) -> Position {
+            self.current_position()
+        }
+        fn action_space(&self) -> HashSet<Self::Action> {
+            use Move::*;
+            vec![Up, Down, Left, Right].into_iter().collect()
+        }
+        fn state_space(&self) -> HashSet<Self::State> {
+            let mut states = HashSet::new();
+            self.for_each(|(row, column), cell| {
+                match cell {
+                    // Block の中には入れないので
+                    Cell::Block => {}
+                    _ => {
+                        states.insert(Position { row, column });
+                    }
+                }
+            });
+            states
+        }
     }
 }
-impl Environment for Field {
-    type Action = MoveAction;
-    type State = Position;
-    fn reset(&mut self) {
-        self.current = self.start;
-        self.steps = 0;
-    }
-    fn current_step(&self) -> usize {
-        self.steps
-    }
-    fn current_state(&self) -> Position {
-        self.current_position()
-    }
-    fn step(&mut self, action: &MoveAction) -> (f64, bool) {
-        self.steps += 1;
+mod a2c {
+    use super::frozen_lake;
+    use super::prelude::*;
+    use rayon::prelude::*;
+    pub struct A2CAgent {}
+    impl A2CAgent {}
+    impl Agent for A2CAgent {
+        type Environment = frozen_lake::Field;
+        fn new<T>(epsilon: f64, env: &Self::Environment, options: T) -> Self {
+            unimplemented!()
+        }
+        fn initialize(&mut self, experiences: ()) {
+            unimplemented!()
+            // use coaster::prelude::*;
+            // use juice::layer::*;
+            // use juice::layers::*;
+            // use std::rc::Rc;
+            // use std::sync::{Arc, RwLock};
 
-        let slipped_action = if rand::random::<f64>() < self.slip_rate {
-            use rand::seq::IteratorRandom;
-            self.all_actions()
-                .into_iter()
-                .choose(&mut rand::thread_rng())
-                .unwrap()
-        } else {
-            *action
-        };
-        use MoveAction::*;
-        let (row, column) = match slipped_action {
-            Up => (self.current.row - 1, self.current.column),
-            Down => (self.current.row + 1, self.current.column),
-            Left => (self.current.row, self.current.column - 1),
-            Right => (self.current.row, self.current.column + 1),
-        };
-        if row < self.row_size() && column < self.column_size() {
-            // 進めるかどうか確認
-            if self.grid[row][column] != Block___ {
-                // 進めた
-                self.current.row = row;
-                self.current.column = column;
-            }
+            // let backend =  Rc::new(juice::util::native_backend());
+            // let mut cfg = SequentialConfig::default();
+            // let mut network = Layer::from_config(
+            //     backend.clone(),
+            //     &LayerConfig::new("foo", LayerType::Sequential(cfg))
+            // );
+
+            // let inp = SharedTensor::new(&[128, 3, 231, 231]);
+            // let inp_lock = Arc::new(RwLock::new(inp));
+            // let o = network.forward(&[inp_lock.clone()]);
+
+            // let mut solver_cfg = SolverConfig { minibatch_size: batch_size, base_lr: learning_rate, momentum: momentum, .. SolverConfig::default() };
+            // solver_cfg.network = LayerConfig::new("network", net_cfg);
+            // solver_cfg.objective = LayerConfig::new("classifier", classifier_cfg);
+            // let mut solver = Solver::from_config(backend.clone(), backend.clone(), &solver_cfg);
         }
-        use Cell::*;
-        let force_done = self.steps >= self.max_episode_steps;
-        match self.current_cell() {
-            // default_reward = -0.04 は歩き回っていると（トータルの）報酬が減っていくことを意味する
-            Ordinary => (-0.04, force_done),
-            Reward__ => (1.0_f64, true),
-            Damage__ => (-1.0_f64, true),
-            Block___ => unreachable!(),
+        fn estimate(
+            &self,
+            state: &<Self::Environment as Environment>::State,
+        ) -> HashMap<<Self::Environment as Environment>::Action, f64> {
+            unimplemented!()
+        }
+        fn update(&mut self, experiences: (), gamma: f64) {
+            unimplemented!()
+        }
+        fn epsilon(&self) -> f64 {
+            unimplemented!()
+        }
+        fn actions(&self) -> &[<Self::Environment as Environment>::Action] {
+            unimplemented!()
         }
     }
-    fn all_states(&self) -> HashSet<Self::State> {
-        let mut states = HashSet::new();
-        self.for_each(|(row, column), cell| {
-            match cell {
-                // Block___ の中には入れないので
-                Cell::Block___ => {}
-                _ => {
-                    states.insert(Position { row, column });
+    pub struct A2CTrainer {
+        agent: A2CAgent,
+    }
+    impl Trainer for A2CTrainer {
+        type Environment = frozen_lake::Field;
+        type Agent = A2CAgent;
+        fn agent(&self) -> &Self::Agent {
+            &self.agent
+        }
+        fn on_episode_start(&mut self) {}
+        fn on_episode_end(&mut self, experiences: &[Experience<Self>]) {}
+        fn on_before_step(
+            &mut self,
+            episode: usize,
+            prev_step: usize,
+            prev_state: &<Self::Environment as Environment>::State,
+        ) {
+        }
+        fn on_after_step(&mut self, experiences: &Experience<Self>) {}
+    }
+
+}
+mod sdl2 {
+    pub fn sine_carve() {
+        use sdl2::event::Event;
+        use sdl2::keyboard::Keycode;
+        use sdl2::rect::Point;
+        use sdl2::rect::Rect;
+        use std::time::Duration;
+        use try_from::*;
+        let width = 640;
+        let height = 480;
+
+        let sdl_context = sdl2::init().unwrap();
+        let video_subsystem = sdl_context.video().unwrap();
+
+        let window = video_subsystem
+            .window("SDL2", width, height)
+            .position_centered()
+            .build()
+            .unwrap();
+
+        let mut canvas = window
+            .into_canvas()
+            // .present_vsync()
+            .accelerated()
+            .build()
+            .map_err(|e| e.to_string())
+            .unwrap();
+        let texture_creator = canvas.texture_creator();
+
+        let mut timer = sdl_context.timer().unwrap();
+        let mut event_pump = sdl_context.event_pump().unwrap();
+
+        let width_f = Into::<f64>::into(width);
+        let height_f = Into::<f64>::into(height);
+        let mut phase_shift: f64 = 0.0_f64;
+        let f_y = |x: f64, phase_shift| -> f64 { f64::sin((x + phase_shift) / 100.0_f64) };
+        let scale = |y: f64| -> i32 { ((y + 1.0_f64) * (height_f / 2.0_f64)) as i32 };
+
+        let mut running = true;
+        while running {
+            for event in event_pump.poll_iter() {
+                match event {
+                    Event::Quit { .. }
+                    | Event::KeyDown {
+                        keycode: Some(Keycode::Escape),
+                        ..
+                    } => {
+                        running = false;
+                    }
+                    _ => {}
                 }
             }
-        });
-        states
-    }
-    fn all_actions(&self) -> HashSet<Self::Action> {
-        use MoveAction::*;
-        let mut actions = HashSet::new();
-        actions.insert(Up);
-        actions.insert(Down);
-        actions.insert(Left);
-        actions.insert(Right);
-        actions
-    }
-}
-struct Actor<E: Environment> {
-    q: HashMap<<E as Environment>::State, HashMap<<E as Environment>::Action, f64>>,
-}
-impl<E: Environment> Actor<E> {
-    fn softmax(
-        x: &HashMap<<E as Environment>::Action, f64>,
-    ) -> HashMap<<E as Environment>::Action, f64> {
-        let sum = x.iter().fold(0.0_f64, |o, (_, v)| o + v.exp());
-        x.into_iter().map(|(k, v)| (*k, v.exp() / sum)).collect()
-    }
-    fn new() -> Self {
-        let q = HashMap::new();
-        Self { q }
-    }
-    fn init(
-        &mut self,
-        states: &HashSet<<E as Environment>::State>,
-        actions: &HashSet<<E as Environment>::Action>,
-    ) {
-        for state in states {
-            let mut o = HashMap::new();
-            for action in actions {
-                o.insert(*action, rand::random());
+            let ticks: i32 = timer.ticks().try_into().unwrap();
+
+            canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
+            canvas.clear();
+
+            canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 255, 0));
+            canvas.fill_rect(Rect::new(10, 10, 10, 10)).unwrap();
+
+            for i in 0..width - 1 {
+                let start_x: f64 = i.into();
+                let start_y: f64 = f_y(start_x, phase_shift);
+                let end_x: f64 = (i + 1).into();
+                let end_y: f64 = f_y(end_x, phase_shift);
+                let sx = start_x as i32;
+                let sy = scale(start_y);
+                let ex = start_x as i32;
+                let ey = scale(end_y);
+                let start = Point::new(sx, sy);
+                let end = Point::new(ex, ey);
+
+                canvas.draw_line(start, end).unwrap();
             }
-            self.q.insert(*state, o);
+            phase_shift += 10.0_f64;
+            canvas.present();
+            std::thread::sleep(Duration::from_millis(15));
         }
-    }
-    fn policy(&mut self, state: &<E as Environment>::State) -> <E as Environment>::Action {
-        use rand::distributions::WeightedIndex;
-        use rand::prelude::*;
-        let mut rng = rand::thread_rng();
-        let actions = self.q.get(&state).unwrap();
-        let probs = Self::softmax(actions).into_iter().collect::<Vec<_>>();
-        let dist = WeightedIndex::new(probs.iter().map(|(_, v)| v)).unwrap();
-        let (action, _) = probs[dist.sample(&mut rng)];
-        action
-    }
-}
-struct Critic<E: Environment> {
-    v: HashMap<<E as Environment>::State, f64>,
-}
-impl<E: Environment> Critic<E> {
-    fn new() -> Self {
-        let v = HashMap::new();
-        Self { v }
-    }
-    fn init(&mut self, states: &HashSet<<E as Environment>::State>) {
-        for state in states {
-            self.v.insert(*state, 0.0_f64);
-        }
-    }
-}
-struct ActorCritic<E: Environment> {
-    actor: Actor<E>,
-    critic: Critic<E>,
-}
-impl<E: Environment> ActorCritic<E> {
-    fn new() -> Self {
-        let actor = Actor::new();
-        let critic = Critic::new();
-        Self { actor, critic }
-    }
-    fn train(
-        mut self,
-        env: &mut E,
-        episode_count: usize,
-        gamma: f64,
-        learning_rate: f64,
-        report_interval: usize,
-    ) -> f64 {
-        let mut total_rewards: Vec<f64> = vec![];
-        let mut total_steps: Vec<f64> = vec![];
-        let actions = env.all_actions();
-        let states = env.all_states();
-        self.actor.init(&states, &actions);
-        self.critic.init(&states);
-        for epi in 0..episode_count {
-            env.reset();
-            let mut experience = vec![];
-            loop {
-                let state = env.current_state();
-                let action = self.actor.policy(&state);
-                let (reward, done) = env.step(&action);
-                let n_state = env.current_state();
-                experience.push((state, action, n_state, reward));
-                let gain = reward + gamma * *self.critic.v.get(&n_state).unwrap();
-                let estimated = *self.critic.v.get(&state).unwrap();
-                let td = gain - estimated;
-                let q = self
-                    .actor
-                    .q
-                    .get_mut(&state)
-                    .unwrap()
-                    .get_mut(&action)
-                    .unwrap();
-                *q += learning_rate * td;
-                let v = self.critic.v.get_mut(&state).unwrap();
-                *v += learning_rate * td;
-                if done {
-                    break;
-                }
-            }
-            let rewards = experience
-                .iter()
-                .map(|(_, _, _, reward)| *reward)
-                .collect::<Vec<_>>();
-            total_steps.push(env.current_step() as f64);
-            total_rewards.push(rewards.iter().sum());
-            if epi % report_interval == 0 {
-                use statrs::statistics::Mean;
-                use statrs::statistics::Variance;
-                let rewards_mean = total_rewards.mean();
-                let rewards_std = total_rewards.std_dev();
-                let steps_mean = total_steps.mean();
-                let steps_std = total_steps.std_dev();
-                dbg!((
-                    epi,
-                    rewards_mean,
-                    rewards_std,
-                    steps_mean,
-                    steps_std
-                ));
-            }
-        }
-        total_rewards.iter().sum()
     }
 }
 
 fn main() {
-    use Cell::*;
-    let slip_rate = 0.0;
-    let max_episode_steps = 100;
-    let mut field = Field::new(
-        vec![
-            // vec![Block___, Block___, Block___, Block___, Block___, Block___],
-            // vec![Block___, Ordinary, Ordinary, Ordinary, Ordinary, Block___],
-            // vec![Block___, Ordinary, Ordinary, Damage__, Ordinary, Block___],
-            // vec![Block___, Ordinary, Block___, Ordinary, Ordinary, Block___],
-            // vec![Block___, Ordinary, Ordinary, Ordinary, Reward__, Block___],
-            // vec![Block___, Block___, Block___, Block___, Block___, Block___],
-            vec![Block___, Block___, Block___, Block___, Block___, Block___, Block___, Block___, Block___, Block___, Block___, Block___],
-            vec![Block___, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Block___],
-            vec![Block___, Ordinary, Ordinary, Ordinary, Damage__, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Block___],
-            vec![Block___, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Block___],
-            vec![Block___, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Damage__, Ordinary, Damage__, Ordinary, Ordinary, Block___],
-            vec![Block___, Damage__, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Block___],
-            vec![Block___, Ordinary, Ordinary, Damage__, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Block___],
-            vec![Block___, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Damage__, Ordinary, Ordinary, Block___],
-            vec![Block___, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Block___],
-            vec![Block___, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Damage__, Ordinary, Ordinary, Reward__, Ordinary, Block___],
-            vec![Block___, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Ordinary, Block___],
-            vec![Block___, Block___, Block___, Block___, Block___, Block___, Block___, Block___, Block___, Block___, Block___, Block___],
-        ],
-        Position { row: 1, column: 1 },
-        max_episode_steps,
-        slip_rate,
-    );
-    let gamma = 0.9_f64;
-    let episode_count = 10000000;
-    let report_interval = episode_count / 10;
-    let learning_rate = 0.1;
-    let ac = ActorCritic::<Field>::new();
-    let total_reward = ac.train(
-        &mut field,
-        episode_count,
-        gamma,
-        learning_rate,
-        report_interval,
-    );
-    dbg!(total_reward);
+    sdl2::sine_carve();
 }

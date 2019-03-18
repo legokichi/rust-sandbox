@@ -8,7 +8,69 @@ edition = "2018"
 rand = "0.6"
 libmath = "0.2"
 rayon = "1.0"
-ndarray = { version = "0.12" }
-statrs = "0.10"
+itertools = "0.8"
+try_from = "0.3.2"
+log = "0.4"
+env_logger = "0.6"
+envy = "0.3"
 serde = { version ="1.0",  features = ["derive"] }
 serde_json = "1.0"
+
+regex = "1.0"
+nom = { version = "^4.2", features = ["regexp", "regexp_macros", "verbose-errors" ] }
+
+# ndarray シリーズ
+ndarray = { version = "0.12" }
+ndarray-rand = "0.9"
+ndarray-stats = "0.1"
+ndarray-linalg = "0.10"
+ndarray-npy = "0.3"
+ndarray-csv = "0.3"
+ndarray-numtest = "0.2"
+ndarray-parallel = "0.9"
+# linxal = "0.6"
+expm = "0.1"
+gramschmidt = "0.4"
+stencil = "0.2"
+condest = "0.2"
+utah = "0.1"
+# argmin = { version = "0.1", features = ["ctrlc", "ndarrayl"] }
+autograd = "0.8"
+finitediff = "0.1"
+
+# nalgebra シリーズ
+nalgebra = "0.17"
+
+# rulinalg シリーズ
+rulinalg = "0.4"
+rusty-machine = "0.5"
+
+rustlearn = "0.5"
+
+vikos = "0.3"
+# drug = "0.0"
+
+wyrm = "0.9"
+prophet = "0.4"
+# sudo apt install capnproto
+juice = "0.2"
+coaster = "0.1"
+
+statrs = "0.10"
+statistical = "1.0"
+streaming-stats = "0.2"
+
+# そういうの(Rustで抽象代数)やりたかったらnumとalga見るといいよ
+num = "0.2"
+alga = "0.8"
+
+programinduction = "0.7"
+# rmcmc = "0.1"
+probability = "0.15"
+hmmm = "0.1"
+
+astro = "2.0"
+
+gnuplot = "0.0"
+# sudo apt-get install libsdl2-dev
+sdl2 = { version = "0.32", features = ["use_mac_framework"] }
