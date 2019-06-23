@@ -1,0 +1,15 @@
+[target.asmjs-unknwon-emscripten]
+rustflags = [
+    "-C", "-s", "USE_PTHREADS=1",
+    # "-C", "-s", "SIMD=1",
+    # "-C", "-s", "PTHREAD_POOL_SIZE=4",
+    # "-C", "-s", "TOTAL_MEMORY=67108864",
+]
+
+[target.wasm32-unknwon-emscripten]
+rustflags = [
+    "-C", "-s", "USE_PTHREADS=1",
+    # "-C", "-s", "SIMD=1",
+    # "-C", "-s", "PTHREAD_POOL_SIZE=4",
+    # "-C", "-s", "TOTAL_MEMORY=67108864",
+]

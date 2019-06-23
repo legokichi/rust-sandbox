@@ -1,0 +1,8 @@
+[package]
+name = "nannou-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+nannou = "0.9"

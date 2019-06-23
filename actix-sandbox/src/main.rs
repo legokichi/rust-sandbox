@@ -56,7 +56,7 @@ fn main() {
 
     let sys = System::new("myserver");
     actix_web::server::new(||{
-        let handle = ::actix::Arbiter::handle();
+        // let handle = ::actix::Arbiter::handle();
         let mut app = App::new();
         app = app
             .middleware(Logger::default())
@@ -85,10 +85,11 @@ fn main() {
             #[derive(Serialize, Deserialize, Debug, Clone)]
             pub struct PathParameters { }
             #[derive(Serialize, Deserialize, Debug, Clone)]
-            pub struct QueryStringParameters { }
+            pub struct QueryStringParameters { json: Option<serde_json::Value> }
             #[derive(Serialize, Deserialize, Debug, Clone)]
             pub struct Response { message: String }
             app = app.route("/", Method::GET, move |(path, query): (Path<PathParameters>, Query<QueryStringParameters>)|-> FutureResponse<HttpResponse> {
+                println!("{:?}", query.json);
                 let fut = future::ok::<HttpResponse, actix_web::Error>( HttpResponse::Ok().json(Response{ message: "hi".to_string() }) );
                 fut.responder()
             })

@@ -21,8 +21,9 @@ fn main() {
         access: egg_mode::KeyPair::new(config.access_token, config.access_secret),
     };
     loop{
-        let (_, res) = block_on_all(egg_mode::tweet::liked_by(&config.screen_name, &token).with_page_size(1024).start()).unwrap();
-        for tw in &res {
+        let (_, res) = block_on_all(egg_mode::tweet::liked_by(&config.screen_name, &token).with_page_size(2048).start()).unwrap();
+        for (h, tw) in res.iter().enumerate() {
+            println!("{}/{}", h, res.len());
             if let &Some(ref user) = &tw.user {
                 let created_at = {
                     let c = &tw.created_at;
@@ -41,13 +42,18 @@ fn main() {
                             continue;
                         }
                         let foldername = format!("/home/legokichi/Dropbox/tw/{}", user.screen_name);
+                        println!("\t{}: mkdir -p {} ", i, foldername);
                         let _output = Command::new("mkdir")
                             .arg("-p")
                             .arg(foldername)
                             .output()
                             .unwrap();
+                        if !_output.status.success() {
+                            eprintln!("{:?}", _output);
+                            panic!("{:?}", _output.status.code());
+                        }
                         let filename = format!("/home/legokichi/Dropbox/tw/{}/{}_{}-{}-{}.{}", user.screen_name, created_at, user.screen_name, tw.id, i, ext);
-                        println!("\t{}:{:?}", i, filename);
+                        println!("\t{}: curl {} -o {}", i, entity.media_url_https, filename);
                         let output = Command::new("curl")
                             .arg(&entity.media_url_https)
                             .arg("-o")
@@ -55,6 +61,7 @@ fn main() {
                             .output()
                             .unwrap();
                         if !output.status.success() {
+                            eprintln!("{:?}", output);
                             panic!("{:?}", output.status.code());
                         }
                         println!("\t{}...exit_code:{:?}", i, output.status.code());
