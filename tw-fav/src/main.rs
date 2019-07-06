@@ -1,9 +1,16 @@
-use tokio::runtime::current_thread::block_on_all;
-use std::process::Command;
-use chrono::prelude::*;
+#![feature(async_await)]
+
 use chrono::naive::NaiveDateTime;
-#[derive(serde_derive::Deserialize, Debug, Clone)]
-struct Config{
+use chrono::prelude::*;
+use futures::compat::{Future01CompatExt as _, Stream01CompatExt as _};
+use futures_util::try_stream::TryStreamExt as _;
+use log::*;
+use serde::Deserialize;
+use std::error::Error;
+use std::time::Duration;
+
+#[derive(Deserialize, Debug, Clone)]
+struct Config {
     consumer_key: String,
     consumer_secret: String,
     access_token: String,
@@ -11,71 +18,119 @@ struct Config{
     screen_name: String,
 }
 
-fn main() {
+#[runtime::main(runtime_tokio::Tokio)]
+async fn main() -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     dotenv::dotenv().ok();
-    ::env_logger::try_init().ok();
+    std::env::set_var("RUST_LOG", "info");
+    env_logger::try_init().ok();
     let config = envy::from_env::<Config>().unwrap();
-    println!("config: {:?}", config);
+
     let token = egg_mode::Token::Access {
         consumer: egg_mode::KeyPair::new(config.consumer_key, config.consumer_secret),
         access: egg_mode::KeyPair::new(config.access_token, config.access_secret),
     };
-    loop{
-        let (_, res) = block_on_all(egg_mode::tweet::liked_by(&config.screen_name, &token).with_page_size(2048).start()).unwrap();
-        for (h, tw) in res.iter().enumerate() {
-            println!("{}/{}", h, res.len());
-            if let &Some(ref user) = &tw.user {
-                let created_at = {
-                    let c = &tw.created_at;
-                    format!("{}-{}-{}_{}-{}-{}", c.year() as u32, c.month() as u32, c.day() as u32, c.hour() as u32, c.minute() as u32, c.second() as u32)
-                };
-                println!("{}@{}:{}:{}", user.name, user.screen_name, tw.id, created_at);
-                println!("\thttps://mobile.twitter.com/{}/status/{}", user.screen_name, tw.id);
-                println!("\ttext: {}", tw.text);
-                if let &Some(ref entiry) = &tw.extended_entities {
-                    let media = &entiry.media;
-                    let mut i = 0;
-                    for entity in media {
-                        let ext  = entity.media_url_https.rsplitn(2, '.').take(1).next().unwrap();
-                        println!("\t{}:{:?}:{}", i, entity.media_url_https, ext);
-                        if !(ext == "jpg" || ext == "png") {
-                            continue;
+    loop {
+        let (_, res) = egg_mode::tweet::liked_by(&config.screen_name, &token)
+            .with_page_size(2048)
+            .start()
+            .compat()
+            .await?;
+        let len = res.len();
+        let results: Vec<Result<String, _>> =
+            futures::future::join_all(res.iter().enumerate().map({
+                let token = &token;
+                async move |(h, tw)| -> Result<String, Box<dyn Error + Send + Sync + 'static>> {
+                    let mut logs: Vec<String> = Vec::new();
+                    logs.push(format!("{}/{}", h, len));
+                    // logs.push(format!("{:?}", tw));
+                    if let &Some(ref user) = &tw.user {
+                        let created_at = {
+                            let c = &tw.created_at;
+                            format!(
+                                "{}-{}-{}_{}-{}-{}",
+                                c.year() as u32,
+                                c.month() as u32,
+                                c.day() as u32,
+                                c.hour() as u32,
+                                c.minute() as u32,
+                                c.second() as u32
+                            )
+                        };
+                        logs.push(format!(
+                            "{}@{}:{}:{}",
+                            user.name, user.screen_name, tw.id, created_at
+                        ));
+                        logs.push(format!(
+                            "\thttps://mobile.twitter.com/{}/status/{}",
+                            user.screen_name, tw.id
+                        ));
+                        logs.push(format!("\ttext: {}", tw.text));
+                        if let &Some(ref entiry) = &tw.extended_entities {
+                            let media = &entiry.media;
+                            let mut i = 0;
+                            for entity in media {
+                                let ext = entity
+                                    .media_url_https
+                                    .rsplitn(2, '.')
+                                    .take(1)
+                                    .next()
+                                    .unwrap();
+                                logs.push(format!("\t{}:{:?}:{}", i, entity.media_url_https, ext));
+                                if !(ext == "jpg" || ext == "png") {
+                                    continue;
+                                }
+                                let foldername =
+                                    format!("/home/legokichi/Dropbox/tw/{}", user.screen_name);
+                                logs.push(format!("\t{}: mkdir -p {} ", i, foldername));
+                                tokio_fs::create_dir_all(foldername).compat().await?;
+                                let filename = format!(
+                                    "/home/legokichi/Dropbox/tw/{}/{}_{}-{}-{}.{}",
+                                    user.screen_name, created_at, user.screen_name, tw.id, i, ext
+                                );
+                                logs.push(format!(
+                                    "\t{}: curl {} -o {}",
+                                    i, entity.media_url_https, filename
+                                ));
+                                let client = reqwest::r#async::ClientBuilder::new().build()?;
+                                let res =
+                                    client.get(&entity.media_url_https).send().compat().await?;
+                                logs.push(format!("\tstatus code: {}", res.status()));
+                                if res.status().is_success() {
+                                    let body = res.into_body().compat().try_concat().await?;
+                                    tokio::fs::write(filename, body).compat().await?;
+                                } else {
+                                    Err("download failed. skip it")?;
+                                }
+                                i += 1;
+                            }
+                            let o = egg_mode::tweet::unlike(tw.id, token).compat().await;
+                            logs.push(format!("\tunlike: {}", o.is_ok()));
                         }
-                        let foldername = format!("/home/legokichi/Dropbox/tw/{}", user.screen_name);
-                        println!("\t{}: mkdir -p {} ", i, foldername);
-                        let _output = Command::new("mkdir")
-                            .arg("-p")
-                            .arg(foldername)
-                            .output()
-                            .unwrap();
-                        if !_output.status.success() {
-                            eprintln!("{:?}", _output);
-                            panic!("{:?}", _output.status.code());
-                        }
-                        let filename = format!("/home/legokichi/Dropbox/tw/{}/{}_{}-{}-{}.{}", user.screen_name, created_at, user.screen_name, tw.id, i, ext);
-                        println!("\t{}: curl {} -o {}", i, entity.media_url_https, filename);
-                        let output = Command::new("curl")
-                            .arg(&entity.media_url_https)
-                            .arg("-o")
-                            .arg(filename)
-                            .output()
-                            .unwrap();
-                        if !output.status.success() {
-                            eprintln!("{:?}", output);
-                            panic!("{:?}", output.status.code());
-                        }
-                        println!("\t{}...exit_code:{:?}", i, output.status.code());
-                        i += 1;
                     }
-                    let o = block_on_all(egg_mode::tweet::unlike(tw.id, &token));
-                    println!("\tunlike: {}", o.is_ok());
+                    Ok(logs.join("\n"))
+                }
+            }))
+            .await;
+        for result in results {
+            match result {
+                Ok(result) => {
+                    info!("{}", result);
+                }
+                Err(err) => {
+                    error!("{}", err);
                 }
             }
         }
-        println!("rate_limit: {}/{}, reset: {}", res.rate_limit_remaining, res.rate_limit, NaiveDateTime::from_timestamp(res.rate_limit_reset.into(), 0));
-        if res.rate_limit_remaining < res.rate_limit/10  {
+        info!(
+            "rate_limit: {}/{}, reset: {}",
+            res.rate_limit_remaining,
+            res.rate_limit,
+            NaiveDateTime::from_timestamp(res.rate_limit_reset.into(), 0)
+        );
+        if res.rate_limit_remaining < res.rate_limit / 10 {
             break;
         }
-        ::std::thread::sleep(::std::time::Duration::from_secs(60*30));
+        runtime::time::Delay::new(Duration::from_secs(60 * 30)).await;
     }
+    Ok(())
 }

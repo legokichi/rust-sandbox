@@ -7,14 +7,18 @@ edition = "2018"
 [dependencies]
 chrono = "0.4"
 dotenv = "0.13"
-egg-mode = { git = "https://github.com/QuietMisdreavus/twitter-rs" }
+egg-mode = { git = "https://github.com/QuietMisdreavus/twitter-rs", branch = "master" }
 env_logger = "0.6"
 envy = "0.3"
-futures = "0.1"
-hyper = "0.12"
-hyper-tls = { version = "0.3", optional = true }
+err-derive = "0.1"
+futures-preview = { version = "=0.3.0-alpha.17", features = ["async-await", "nightly"] }
+futures-util-preview = { version = "=0.3.0-alpha.17", features = ["async-await", "nightly"] }
 log = "0.4"
-serde = "1.0"
-serde_derive = "1.0"
+reqwest = "0.9"
+runtime = { version = "0.3.0-alpha.5", default-features = true }
+runtime-tokio = "0.3.0-alpha.5"
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = "0.1"
+tokio-fs = "0.1"
+tokio-timer = "0.2"
