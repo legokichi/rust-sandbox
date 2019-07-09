@@ -32,7 +32,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     loop {
         let (mut timeline, mut res) =
         egg_mode::tweet::liked_by(&config.screen_name, &token)
-        // egg_mode::tweet::user_timeline("ayaoricarbon", false, false, &token)
+        //egg_mode::tweet::user_timeline("teru_AC52", false, false, &token)
             .with_page_size(50)
             .start()
             .compat()
@@ -158,3 +158,4 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     }
     Ok(())
 }
+
