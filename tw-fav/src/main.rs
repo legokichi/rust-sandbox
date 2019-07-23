@@ -1,5 +1,6 @@
 #![feature(async_await, async_closure)]
 
+use structopt::StructOpt;
 use chrono::naive::NaiveDateTime;
 use chrono::prelude::*;
 use futures::compat::{Future01CompatExt as _, Stream01CompatExt as _};
@@ -7,6 +8,7 @@ use futures_util::try_stream::TryStreamExt as _;
 use log::*;
 use serde::Deserialize;
 use std::error::Error;
+use std::path::Path;
 use std::time::Duration;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -16,24 +18,70 @@ struct Config {
     access_token: String,
     access_secret: String,
     screen_name: String,
+    save_dir: String,
+}
+
+
+#[derive(StructOpt, Debug)]
+struct Opt {
+    #[structopt(name = "screen_name")]
+    screen_names: Vec<String>,
 }
 
 #[runtime::main(runtime_tokio::Tokio)]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     dotenv::dotenv().ok();
-    std::env::set_var("RUST_LOG", "info");
     env_logger::try_init().ok();
     let config = envy::from_env::<Config>().unwrap();
+    let opt = Opt::from_args();
 
-    let token = egg_mode::Token::Access {
-        consumer: egg_mode::KeyPair::new(config.consumer_key, config.consumer_secret),
-        access: egg_mode::KeyPair::new(config.access_token, config.access_secret),
+    let save_dir = config.save_dir;
+    let token = {
+        let consumer = egg_mode::KeyPair::new(config.consumer_key, config.consumer_secret);
+        let token = egg_mode::Token::Access {
+            consumer: consumer.clone(),
+            access: egg_mode::KeyPair::new(config.access_token, config.access_secret),
+        };
+
+        let ret = egg_mode::verify_tokens(&token).compat().await;
+        match ret {
+            Ok(_) => token,
+            Err(_) => {
+                // for PIN-Based Auth
+                let req_token = egg_mode::request_token(&consumer, "oob").compat().await?;
+                let auth_url = egg_mode::authorize_url(&req_token);
+                println!("{}", auth_url);
+                let mut rl = rustyline::Editor::<()>::new();
+                let verifier = rl.readline("PIN: ")?;
+
+                let (token, user_id, screen_name) = egg_mode::access_token(consumer, &req_token, verifier).compat().await?;
+                println!("screen_name: {:?}", screen_name);
+                println!("user_id: {:?}", user_id);
+                println!("token: {:?}", token);
+                match &token {
+                    &egg_mode::Token::Access{ref  access, .. } =>{
+                        println!("ACCESS_TOKEN={}", access.key);
+                        println!("ACCESS_SECRET={}", access.secret);
+                    }
+                    _ =>{
+                        error!("{:?}", token);
+                        unreachable!();
+                    }
+                }
+                token
+            }
+        }
     };
-    loop {
-        let (mut timeline, mut res) =
-        egg_mode::tweet::liked_by(&config.screen_name, &token)
-        //egg_mode::tweet::user_timeline("teru_AC52", false, false, &token)
-            .with_page_size(50)
+
+    let mut screen_names_iter = opt.screen_names.iter();
+    loop{
+        let opt_screen_name = screen_names_iter.next();
+        let (mut timeline, mut res) = if let Some(ref screen_name) = opt_screen_name {
+            egg_mode::tweet::user_timeline(screen_name.as_str(), false, false, &token)
+        }else{
+            egg_mode::tweet::liked_by(&config.screen_name, &token)
+        }
+            .with_page_size(1024)
             .start()
             .compat()
             .await?;
@@ -42,6 +90,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
             let results: Vec<Result<String, _>> =
                 futures::future::join_all(res.iter().enumerate().map({
                     let token = &token;
+                    let save_dir = &save_dir;
                     async move |(h, tw)| -> Result<String, Box<dyn Error + Send + Sync + 'static>> {
                         let mut logs: Vec<String> = Vec::new();
                         logs.push(format!("{}/{}", h, len));
@@ -85,22 +134,22 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
                                     if !(ext == "jpg" || ext == "png") {
                                         continue;
                                     }
-                                    let foldername =
-                                        format!("/home/legokichi/Dropbox/tw/{}", user.screen_name);
-                                    logs.push(format!("\t{}: mkdir -p {} ", i, foldername));
-                                    tokio_fs::create_dir_all(foldername).compat().await?;
-                                    let filename = format!(
-                                        "/home/legokichi/Dropbox/tw/{}/{}_{}-{}-{}.{}",
-                                        user.screen_name,
-                                        created_at,
-                                        user.screen_name,
-                                        tw.id,
+                                    let foldername = Path::new(&save_dir).join(&user.screen_name);
+                                    logs.push(format!(
+                                        "\t{}: mkdir -p {} ",
                                         i,
-                                        ext
-                                    );
+                                        foldername.display()
+                                    ));
+                                    tokio_fs::create_dir_all(&foldername).compat().await?;
+                                    let filename = foldername.join(&format!(
+                                        "{}_{}-{}-{}.{}",
+                                        created_at, user.screen_name, tw.id, i, ext
+                                    ));
                                     logs.push(format!(
                                         "\t{}: curl {} -o {}",
-                                        i, entity.media_url_https, filename
+                                        i,
+                                        entity.media_url_https,
+                                        filename.display()
                                     ));
                                     let client = reqwest::r#async::ClientBuilder::new().build()?;
                                     let res =
@@ -153,9 +202,10 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
                 break;
             }
         }
-        info!("wait"); 
-        runtime::time::Delay::new(Duration::from_secs(60 * 30)).await;
+        if opt_screen_name.is_none() {
+            info!("wait");
+            runtime::time::Delay::new(Duration::from_secs(60 * 30)).await;
+        }
     }
     Ok(())
 }
-
