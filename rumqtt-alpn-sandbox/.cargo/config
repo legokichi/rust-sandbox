@@ -1,0 +1,9 @@
+[target.arm-unknown-linux-musleabihf]
+# linker = "arm-linux-gnueabihf-gcc-6"
+rustflags = [
+  "-C", "link-arg=-march=armv6",
+  "-C", "link-arg=-mfpu=vfp",
+  "-C", "link-arg=-mfloat-abi=hard",
+  "-Z", "print-link-args",
+]
+

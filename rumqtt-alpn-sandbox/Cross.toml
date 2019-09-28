@@ -1,0 +1,5 @@
+[target.arm-unknown-linux-gnueabihf]
+image = "arm-unknown-linux-gnueabihf:latest"
+
+[target.arm-unknown-linux-musleabihf]
+image = "arm-unknown-linux-musleabihf:latest"
