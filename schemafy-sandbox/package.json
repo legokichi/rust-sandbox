@@ -1,0 +1,20 @@
+{
+  "name": "schemafy-sandbox",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "schema": "npx ts-json-schema-generator --path schema.d.ts --tsconfig tsconfig.json --unstable --strict-tuples --validationKeywords=contentEncoding --validationKeywords=contentMediaType > schema.json"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ts-json-schema-generator": "^0.58.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.39",
+    "@types/node": "^12.12.17",
+    "aws-sdk": "^2.590.0",
+    "utility-types": "^3.10.0"
+  }
+}
