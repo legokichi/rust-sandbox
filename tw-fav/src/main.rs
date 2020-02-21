@@ -1,15 +1,13 @@
-#![feature(async_await, async_closure)]
+#![feature(async_closure)]
 
 use chrono::naive::NaiveDateTime;
 use chrono::prelude::*;
-use futures::compat::{Future01CompatExt as _, Stream01CompatExt as _};
-use futures_util::try_stream::TryStreamExt as _;
 use log::*;
 use serde::Deserialize;
 use std::error::Error;
 use std::path::Path;
 use std::time::Duration;
-use structopt::StructOpt;
+use clap::Clap;
 
 #[derive(Deserialize, Debug, Clone)]
 struct Config {
@@ -21,39 +19,39 @@ struct Config {
     save_dir: String,
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Clap, Debug)]
 enum Opt {
-    #[structopt(name = "save_photo")]
+    #[clap(name = "save_photo")]
     SavePhoto {
-        #[structopt(name = "screen_name")]
+        #[clap(name = "screen_name")]
         screen_names: Vec<String>,
     },
-    #[structopt(name = "add_list")]
+    #[clap(name = "add_list")]
     AddList {
-        #[structopt(long = "list-name", name = "list_name")]
+        #[clap(long = "list-name", name = "list_name")]
         list_name: String,
-        #[structopt(long = "unfollow", name = "unfollow")]
+        #[clap(long = "unfollow", name = "unfollow")]
         unfollow: bool,
-        #[structopt(name = "screen_name")]
+        #[clap(name = "screen_name")]
         screen_names: Vec<String>,
     },
-    #[structopt(name = "both")]
+    #[clap(name = "both")]
     Both {
-        #[structopt(long = "list-name", name = "list_name")]
+        #[clap(long = "list-name", name = "list_name")]
         list_name: String,
-        #[structopt(long = "unfollow", name = "unfollow")]
+        #[clap(long = "unfollow", name = "unfollow")]
         unfollow: bool,
-        #[structopt(name = "screen_name")]
+        #[clap(name = "screen_name")]
         screen_names: Vec<String>,
     },
 }
 
-#[runtime::main(runtime_tokio::Tokio)]
+#[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     dotenv::dotenv().ok();
     env_logger::try_init().ok();
     let config = envy::from_env::<Config>().unwrap();
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
 
     let token = {
         let consumer = egg_mode::KeyPair::new(config.consumer_key, config.consumer_secret);
@@ -62,12 +60,12 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
             access: egg_mode::KeyPair::new(config.access_token, config.access_secret),
         };
 
-        let ret = egg_mode::verify_tokens(&token).compat().await;
+        let ret = egg_mode::verify_tokens(&token).await;
         match ret {
             Ok(_) => token,
             Err(_) => {
                 // for PIN-Based Auth
-                let req_token = egg_mode::request_token(&consumer, "oob").compat().await?;
+                let req_token = egg_mode::request_token(&consumer, "oob").await?;
                 let auth_url = egg_mode::authorize_url(&req_token);
                 println!("{}", auth_url);
                 let mut rl = rustyline::Editor::<()>::new();
@@ -75,7 +73,6 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
 
                 let (token, user_id, screen_name) =
                     egg_mode::access_token(consumer, &req_token, verifier)
-                        .compat()
                         .await?;
                 println!("screen_name: {:?}", screen_name);
                 println!("user_id: {:?}", user_id);
@@ -122,7 +119,7 @@ async fn save_photo(
     token: egg_mode::Token,
     screen_names: Vec<String>,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    let user = egg_mode::verify_tokens(&token).compat().await?;
+    let user = egg_mode::verify_tokens(&token).await?;
     let screen_name = user.screen_name.clone();
     let mut screen_names_iter = screen_names.iter();
     loop {
@@ -134,7 +131,6 @@ async fn save_photo(
         }
         .with_page_size(1024)
         .start()
-        .compat()
         .await?;
         loop {
             let len = res.len();
@@ -191,7 +187,7 @@ async fn save_photo(
                                         i,
                                         foldername.display()
                                     ));
-                                    tokio_fs::create_dir_all(&foldername).compat().await?;
+                                    tokio::fs::create_dir_all(&foldername).await?;
                                     let filename = foldername.join(&format!(
                                         "{}_{}-{}-{}.{}",
                                         created_at, user.screen_name, tw.id, i, ext
@@ -202,19 +198,19 @@ async fn save_photo(
                                         entity.media_url_https,
                                         filename.display()
                                     ));
-                                    let client = reqwest::r#async::ClientBuilder::new().build()?;
+                                    let client = reqwest::ClientBuilder::new().build()?;
                                     let res =
-                                        client.get(&entity.media_url_https).send().compat().await?;
+                                        client.get(&entity.media_url_https).send().await?;
                                     logs.push(format!("\tstatus code: {}", res.status()));
                                     if res.status().is_success() {
-                                        let body = res.into_body().compat().try_concat().await?;
-                                        tokio::fs::write(filename, body).compat().await?;
+                                        let body = res.bytes().await?;
+                                        tokio::fs::write(filename, body).await?;
                                     } else {
                                         Err("download failed. skip it")?;
                                     }
                                     i += 1;
                                 }
-                                let o = egg_mode::tweet::unlike(tw.id, token).compat().await;
+                                let o = egg_mode::tweet::unlike(tw.id, token).await;
                                 logs.push(format!("\tunlike: {}", o.is_ok()));
                             }
                         }
@@ -243,7 +239,7 @@ async fn save_photo(
                 "min_id: {:?}, max_id: {:?}, count: {}",
                 timeline.min_id, timeline.max_id, timeline.count
             );
-            let o = timeline.older(None).compat().await?;
+            let o = timeline.older(None).await?;
             timeline = o.0;
             res = o.1;
             if timeline.count == 0 || min_id.is_none() {
@@ -255,7 +251,7 @@ async fn save_photo(
         }
         if opt_screen_name.is_none() {
             info!("wait");
-            runtime::time::Delay::new(Duration::from_secs(60 * 30)).await;
+            tokio::time::delay_for(Duration::from_secs(60 * 30)).await;
         }
     }
     Ok(())
@@ -267,26 +263,24 @@ async fn add_list(
     unfollow: bool,
     screen_names: Vec<String>,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    let user = egg_mode::verify_tokens(&token).compat().await?;
-    let vec_list = egg_mode::list::list(user.id, true, &token).compat().await?;
+    let user = egg_mode::verify_tokens(&token).await?;
+    let vec_list = egg_mode::list::list(user.id, true, &token).await?;
     let opt_list = vec_list.iter().filter(|list| list.name == list_name).next();
     let list = opt_list.unwrap();
     println!("{}: {}", list.id, list.name);
     for screen_name in screen_names {
-        let user = egg_mode::user::show(&screen_name, &token).compat().await?;
+        let user = egg_mode::user::show(&screen_name, &token).await?;
         egg_mode::list::add_member(
             egg_mode::list::ListID::from_id(list.id),
             &screen_name,
             &token,
         )
-        .compat()
         .await?;
         println!("add_member: {}", screen_name);
         match (user.protected, unfollow) {
             (false, true) => {
                 if unfollow {
                     let ret = egg_mode::user::unfollow(&screen_name, &token)
-                        .compat()
                         .await;
                     println!("unfollow: {}, {:?}", screen_name, ret.is_ok());
                 }

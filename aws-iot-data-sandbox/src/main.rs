@@ -147,7 +147,6 @@ async fn main() -> Result<(), failure::Error> {
         let signed_client =
             hyper::Client::builder().build::<_, hyper::Body>(signed_https_connector.clone());
         let req = hyper::Request::get(shadow_url)
-            .header("x-amzn-iot-thingname", &thing_name)
             .body(hyper::Body::empty())?;
         println!("{:?}", req);
         let res = signed_client.request(req).map_err(SyncFailure::new).await?;
