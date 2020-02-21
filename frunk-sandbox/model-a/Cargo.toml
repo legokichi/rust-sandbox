@@ -1,0 +1,15 @@
+[package]
+name = "model-a"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+frunk = { version = "0.3", features = ["serde"] }
+frunk_core = { version = "0.3", features = ["serde"] }
+derive_more = "0.99"
+frunk-enum-core = "0.2"
+frunk-enum-derive = "0.2"
+
