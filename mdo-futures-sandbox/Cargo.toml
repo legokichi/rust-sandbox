@@ -1,0 +1,13 @@
+[package]
+name = "mdo-futures-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+# edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+futures = "0.1"
+tokio = "0.1"
+mdo = "0.3"
+mdo-future = "0.2"
