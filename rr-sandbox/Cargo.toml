@@ -1,0 +1,12 @@
+[package]
+name = "rr-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
+
+# to rr debuging
+[profile.release]
+debug = 2
+
+
+[dependencies]
