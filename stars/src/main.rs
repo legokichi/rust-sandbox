@@ -809,11 +809,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ];
     let stars = stars.into_iter().map(Star::from).collect::<Vec<_>>();
 
-    let root = BitMapBackend::new("0.png", (1000, 1000)).into_drawing_area();
+    let root = BitMapBackend::new("0.png", (900, 500)).into_drawing_area();
     root.fill(&White)?;
     let mut chart = ChartBuilder::on(&root)
         .caption("Equatorial coordinate system", ("Arial", 40).into_font())
-        .margin(50)
+        .margin(10)
         .x_label_area_size(20)
         .y_label_area_size(40)
         .build_ranged(-24f64..0f64, -90f64..90f64)?;
