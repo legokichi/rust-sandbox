@@ -1,0 +1,52 @@
+method m_main$$main$opensqu$0$closesqu$(0 args)
+    returns (_0: Ref(tuple0$))
+{
+    __t0: Bool
+    _1: Ref(never)
+    _2: Ref(tuple0$)
+    _3: Ref(never)
+    _4: Ref(ref$tuple3$ref$str$u32$u32)
+    _5: Ref(ref$tuple3$ref$str$u32$u32)
+    _6: Ref(tuple3$ref$str$u32$u32)
+    _7: Ref(ref$tuple3$ref$str$u32$u32)
+  label start // 0
+    // ========== start ==========
+    // Name: "main::main"
+    // Def path: "main::main[0]"
+    // Span: /home/legokichi/Github/rust-snipets/miri-sandbox/src/main.rs:1:1: 3:2
+    __t0 := copy false
+    // Preconditions:
+    inhale(Stmt) true
+    inhale(Stmt) true
+    inhale(Stmt) true
+    inhale(Expr) true
+    label pre
+    Goto(cfg:1)
+  label bb0 // 1
+    // ========== bb0 ==========
+    __t0 := copy true
+    // [mir] StorageLive(_4)
+    // [mir] StorageLive(_5)
+    // [mir] _7 = promoted[0]
+    // [mir] _5 = &'8s (*_7)
+    // [mir] _4 = &'8s (*_5)
+    // [mir] const std::rt::begin_panic(const "internal error: entered unreachable code", move _4) -> bb1
+    // Rust panic - const "internal error: entered unreachable code"
+    assert(Stmt) false
+    Return
+  label return // 2
+    // ========== return ==========
+    // Target of any 'return' statement.
+    // Exhale postcondition
+    // Fold predicates for &mut args and transfer borrow permissions to old
+    // Fold the result
+    obtain acc(tuple0$(_0), write)
+    assert(Expr) true
+    assert(Stmt) (tuple0$$inv<Ref(tuple0$),Bool>(_0)) && (true)
+    exhale true
+    exhale acc(tuple0$(_0), write)
+    Return
+  label end_of_method
+}
+
+

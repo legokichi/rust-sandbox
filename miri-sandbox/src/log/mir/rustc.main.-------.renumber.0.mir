@@ -1,0 +1,46 @@
+// MIR for `main`
+// source = MirSource { def_id: DefId(0/0:3 ~ main[8787]::main[0]), promoted: None }
+// pass_name = renumber
+// disambiguator = 0
+
+fn main() -> (){
+    let mut _0: ();                      // return place
+    let mut _1: !;
+    let mut _2: ();
+    let mut _3: !;
+    let mut _4: &'10rv (&'11rv str, u32, u32);
+    let mut _5: &'12rv (&'13rv str, u32, u32);
+    let mut _6: (&'14rv str, u32, u32);
+    let mut _7: &'15rv (&'16rv str, u32, u32);
+
+    bb0: {                              
+        StorageLive(_4);                 // bb0[0]: scope 0 at <panic macros>:4:9: 4:72
+        StorageLive(_5);                 // bb0[1]: scope 0 at <panic macros>:4:9: 4:72
+        _7 = promoted[0];                // bb0[2]: scope 0 at <panic macros>:4:9: 4:72
+                                         // mir::Constant
+                                         // + span: <panic macros>:4:9: 4:72
+                                         // + ty: &'2rv (&'3rv str, u32, u32)
+                                         // + literal: promoted[0]
+        _5 = &'4rv (*_7);                // bb0[3]: scope 0 at <panic macros>:4:9: 4:72
+        _4 = &'5rv (*_5);                // bb0[4]: scope 0 at <panic macros>:4:9: 4:72
+        const std::rt::begin_panic(const "internal error: entered unreachable code", move _4) -> bb1; // bb0[5]: scope 0 at <panic macros>:3:1: 4:74
+                                         // ty::Const
+                                         // + ty: for<'r> fn(&'7rv str, &'r (&'static str, u32, u32)) -> ! {std::rt::begin_panic::<&'7rv str>}
+                                         // + val: Value(Scalar(Bits { defined: 0, bits: 0 }))
+                                         // mir::Constant
+                                         // + span: <panic macros>:3:1: 3:29
+                                         // + ty: for<'r> fn(&'6rv str, &'r (&'static str, u32, u32)) -> ! {std::rt::begin_panic::<&'6rv str>}
+                                         // + literal: const std::rt::begin_panic
+                                         // ty::Const
+                                         // + ty: &'9rv str
+                                         // + val: Value(ScalarPair(Ptr(Pointer { alloc_id: AllocId(0), offset: Size { raw: 0 } }), Bits { defined: 64, bits: 40 }))
+                                         // mir::Constant
+                                         // + span: <unreachable macros>:1:23: 1:65
+                                         // + ty: &'8rv str
+                                         // + literal: const "internal error: entered unreachable code"
+    }
+
+    bb1: {                               // cleanup
+        resume;                          // bb1[0]: scope 0 at /home/legokichi/Github/rust-snipets/miri-sandbox/src/main.rs:1:1: 3:2
+    }
+}
