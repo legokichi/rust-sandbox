@@ -1,0 +1,103 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://actcast.io/schema/v2/manifesto_schema.json",
+    "title": "Manifesto schema",
+    "definitions": {
+        "boards": {
+            "type": "string",
+            "enum": [
+                "RSPi1A",
+                "RSPi1B",
+                "RSPi1APlus",
+                "RSPi1BPlus",
+                "RSPi2B",
+                "RSPiAlpha",
+                "RSPiCM1",
+                "RSPi3B",
+                "RSPiZero",
+                "RSPiCM3",
+                "RSPiZeroW",
+                "RSPi3BPlus",
+                "RSPi3APlus",
+                "RSPiCM3Plus",
+                "RSPi4B"
+            ]
+        }
+    },
+    "type": "object",
+    "properties": {
+        "boards": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/boards"
+            }
+        },
+        "devices": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "camera",
+                            "gpio",
+                            "videocore",
+                            "framebuffer"
+                        ]
+                    },
+                    "device": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "required": {
+                        "type": "boolean"
+                    },
+                    "commentary": {
+                        "type": "string",
+                        "maxLength": 50
+                    }
+                },
+                "required": [
+                    "type",
+                    "device"
+                ]
+            }
+        },
+        "networks": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "domain": {
+                        "type": "string",
+                        "format": "hostname"
+                    },
+                    "port": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 65535
+                    },
+                    "protocol": {
+                        "type": "string",
+                        "enum": [
+                            "tcp",
+                            "udp"
+                        ]
+                    }
+                },
+                "required": [
+                    "domain",
+                    "port",
+                    "protocol"
+                ]
+            }
+        }
+    },
+    "required": [
+        "boards",
+        "devices"
+    ]
+}

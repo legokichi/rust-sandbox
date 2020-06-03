@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "definitions": {
+    "MyGame_Sample_Color" : {
+      "type" : "string",
+      "enum": ["Red", "Green", "Blue"]
+    },
+    "MyGame_Sample_Equipment" : {
+      "type" : "string",
+      "enum": ["NONE", "Weapon"]
+    },
+    "MyGame_Sample_Vec3" : {
+      "type" : "object",
+      "properties" : {
+        "x" : {
+                "type" : "number"
+              },
+        "y" : {
+                "type" : "number"
+              },
+        "z" : {
+                "type" : "number"
+              }
+      },
+      "additionalProperties" : false
+    },
+    "MyGame_Sample_Monster" : {
+      "type" : "object",
+      "properties" : {
+        "pos" : {
+                "$ref" : "#/definitions/MyGame_Sample_Vec3"
+              },
+        "mana" : {
+                "type" : "number"
+              },
+        "hp" : {
+                "type" : "number"
+              },
+        "name" : {
+                "type" : "string"
+              },
+        "friendly" : {
+                "type" : "boolean"
+              },
+        "inventory" : {
+                "type" : "array", "items" : { "type" : "number" }
+              },
+        "color" : {
+                "$ref" : "#/definitions/MyGame_Sample_Color"
+              },
+        "weapons" : {
+                "type" : "array", "items" : { "$ref" : "#/definitions/MyGame_Sample_Weapon" }
+              },
+        "equipped_type" : {
+                "$ref" : "#/definitions/MyGame_Sample_Equipment"
+              },
+        "equipped" : {
+                "anyOf": [{ "$ref" : "#/definitions/MyGame_Sample_Weapon" }]
+              },
+        "path" : {
+                "type" : "array", "items" : { "$ref" : "#/definitions/MyGame_Sample_Vec3" }
+              }
+      },
+      "additionalProperties" : false
+    },
+    "MyGame_Sample_Weapon" : {
+      "type" : "object",
+      "properties" : {
+        "name" : {
+                "type" : "string"
+              },
+        "damage" : {
+                "type" : "number"
+              }
+      },
+      "additionalProperties" : false
+    }
+  },
+  "$ref" : "#/definitions/MyGame_Sample_Monster"
+}

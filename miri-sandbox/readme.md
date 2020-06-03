@@ -41,6 +41,7 @@ cargo miri test
 * 汚染分析 - 信用できない関数を使っている関数は信用できない
 * プロトコル（状態遷移）検証
 * https://lib.rs/crates/mirai-annotations
+* https://crates.io/crates/mirai_annotations
 * https://github.com/facebookexperimental/MIRAI/tree/master/annotations
 
 ```
@@ -87,4 +88,12 @@ rustup install nightly-2018-06-27
 * https://docs.rs/verifier/0.1.0/verifier/
     * https://github.com/soarlab/rust-benchmarks
     * mirai 向け
+
+# fuzzing
+
+## cargo fuzz
+
+```
+cargo fuzz run fuzz_target_1
+```
 

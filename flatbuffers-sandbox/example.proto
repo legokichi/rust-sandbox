@@ -1,0 +1,22 @@
+syntax = "proto3";
+package example.protobuf;
+
+message SimpleMessage {
+    message HeaderItem {
+        string name = 1;
+        string value = 2;
+    }
+    enum Type {
+        START = 0;
+        BLOB = 1;
+        END = 2;
+    }
+
+    uint64 id = 1;
+    Type message_type = 2;
+    repeated HeaderItem header = 3;
+    oneof data {
+        bytes blob = 4;
+        string plaintext = 5;
+    }
+}
