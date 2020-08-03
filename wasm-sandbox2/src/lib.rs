@@ -33,12 +33,12 @@ extern "C" {
     pub fn now() -> f64;
 }
 
-#[wasm_bindgen(start)]
-pub fn main() {
-    console_log::init_with_level(log::Level::Debug).unwrap();
+// #[wasm_bindgen(start)]
+// pub fn main() {
+//     console_log::init_with_level(log::Level::Debug).unwrap();
 
-    // wasm_logger::init(wasm_logger::Config::default());
+//     // wasm_logger::init(wasm_logger::Config::default());
     
-    // log::set_logger(&wasm_bindgen_console_logger::DEFAULT_LOGGER).unwrap();
-    // log::set_max_level(log::LevelFilter::Info);
-}
+//     // log::set_logger(&wasm_bindgen_console_logger::DEFAULT_LOGGER).unwrap();
+//     // log::set_max_level(log::LevelFilter::Info);
+// }
