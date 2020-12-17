@@ -1,0 +1,13 @@
+[package]
+name = "quicksilver-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
+
+[profile.release]
+lto = true
+opt-level = "s"
+
+[dependencies]
+quicksilver = { git = "https://github.com/ryanisaacg/quicksilver", branch = "master", features = ["stdweb"] }
+derive_more = "*"
