@@ -1,0 +1,14 @@
+[package]
+name = "serde-ser-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+rusoto_dynamodb = "0.45"
+err-derive = "*"
+serde_dynamodb = { path = "/home/legokichi/Github/serde_dynamodb/serde_dynamodb" }
+
