@@ -1,0 +1,12 @@
+[package]
+name = "probability-sandbox"
+version = "0.1.0"
+authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
+edition = "2018"
+
+
+[dependencies]
+probability = "*"
+statrs = "*"
+rstat = "*"
+
