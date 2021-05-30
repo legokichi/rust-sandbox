@@ -1,0 +1,62 @@
+
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+message GetRequest {
+  string name = 1;
+  int32 age = 2;
+  repeated string features = 3;
+}
+
+message GetResponse {
+  enum Status {
+    OK = 0;
+    ERR = 1;
+    NOT_FOUND = 2;
+  }
+  Status status = 1;
+  string address = 2;
+  string city = 3;
+  int32 zipcode = 4;
+  google.protobuf.Timestamp ts = 5;
+
+  oneof data {
+    DomainNetwork domain_network = 10;
+    LocalNetwork local_network = 11;
+    MulticastNetwork multicast_network = 12;
+  }
+}
+
+message DomainNetwork {
+  /** WildcardEnabledDomainName */
+  string domain = 1;
+  uint32 port = 2;
+  TransportLayerProtocol protocol = 3;
+}
+
+message LocalNetwork {
+  /** 現在は true のみサポート */
+  bool local_addr = 1;
+  uint32 port = 2;
+  TransportLayerProtocol protocol = 3;
+}
+
+message MulticastNetwork {
+  /** IPv4 or IPv6 */
+  string multicast_addr = 1;
+  uint32 port = 2;
+  /** 現在は UDP のみサポート */
+  TransportLayerProtocol protocol = 3;
+  Direction direction = 4;
+}
+
+enum TransportLayerProtocol {
+  TCP = 0;
+  UDP = 1;
+}
+
+enum Direction {
+  SEND = 0;
+  RECV = 1;
+}
