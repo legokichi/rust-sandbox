@@ -1,0 +1,9 @@
+---
+source: tests/test.rs
+expression: "vec![input, expected]"
+
+---
+[
+    4,
+    3,
+]
