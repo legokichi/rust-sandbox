@@ -1,0 +1,33 @@
+[package]
+name = "opencat"
+version = "0.1.0"
+edition = "2018"
+
+
+
+[dependencies]
+panic-halt = "0.2"
+# https://docs.rs/nb/1.0.0/nb/
+nb = "0.1"
+# https://docs.rs/ufmt/0.1.0/ufmt/
+ufmt = "0.1"
+# https://docs.rs/avr-device/0.3.0/avr_device/atmega328p/index.html
+avr-device = { version = "0.3", features = ["atmega328p"] }
+# https://docs.rs/embedded-hal/0.2.5/embedded_hal/
+embedded-hal = "0.2"
+# https://rahix.github.io/avr-hal/atmega328p_hal/
+atmega328p-hal = { git = "https://github.com/rahix/avr-hal", rev = "885e8ec", features = ["atmega328p"] }
+# https://rahix.github.io/avr-hal/arduino_uno/
+arduino-uno = { git = "https://github.com/rahix/avr-hal", rev = "885e8ec" }
+# https://rahix.github.io/avr-hal/avr_hal_generic/
+avr-hal-generic = { git = "https://github.com/rahix/avr-hal", rev = "885e8ec" }
+# derive_more = "0.99"
+# https://docs.rs/mpu6050/0.1.4/mpu6050/
+# mpu6050 = "0.1"
+# drogue-mpu-6050 = { path = "../../drogue-mpu-6050" }
+# heapless = "0.7"
+# either = "1.6"
+# tinyvec = "1.2"
+i2cdev = { path = "../i2cdev" }
+mpu6050 = { path = "../mpu6050" }
+
