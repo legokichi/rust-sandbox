@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "std-rust-crate",
+    "wasm-rust-crate"
+]
