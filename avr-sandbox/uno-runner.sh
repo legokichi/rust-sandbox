@@ -15,22 +15,23 @@ then
     exit 1
 fi
 
-SERIAL_PORT="/dev/ttyUSB0"
+SERIAL_PORT="/dev/ttyACM0"
 
 if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo "usage: $0 <application.elf>" >&2
     exit 1
 fi
 
-if [ "$#" -lt 1 ]; then
-    echo "$0: no ELF file given" >&2
-    exit 1
-fi
-
-NAME="$(basename "$1")"
-SIZE_TEXT="$(avr-size "$1" | tail -1 | cut -f1)"
-SIZE_DATA="$(avr-size "$1" | tail -1 | cut -f2)"
-SIZE_BSS="$(avr-size "$1" | tail -1 | cut -f3)"
+# if [ "$#" -lt 1 ]; then
+#     echo "$0: no ELF file given" >&2
+#     exit 1
+# fi
+# TARGET=="$1"
+TARGET=target/avr-unknown-gnu-atmega328/release/opencat.elf
+NAME="$(basename "$TARGET")"
+SIZE_TEXT="$(avr-size "$TARGET" | tail -1 | cut -f1)"
+SIZE_DATA="$(avr-size "$TARGET" | tail -1 | cut -f2)"
+SIZE_BSS="$(avr-size "$TARGET" | tail -1 | cut -f3)"
 
 printf "\n"
 printf "Program:             %s\n" "$NAME"
@@ -42,4 +43,4 @@ printf "\n"
 printf "Attempting to flash ...\n"
 printf "\n"
 
-avrdude -q  -patmega328p -carduino -P"${SERIAL_PORT}" -D "-Uflash:w:$1:e"
+avrdude -q  -patmega328p -carduino -P"${SERIAL_PORT}" -D "-Uflash:w:$TARGET:e"

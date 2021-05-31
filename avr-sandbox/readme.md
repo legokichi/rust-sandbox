@@ -77,6 +77,10 @@ https://rahix.github.io/avr-hal/atmega328p_hal/
 https://rahix.github.io/avr-hal/arduino_uno/
 https://rahix.github.io/avr-hal/avr_hal_generic/
 
+### avr
+- https://blog.handen.net/archives/8031672.html
+- https://blog.handen.net/archives/8456549.html
+- https://avr.jp/user/DS/PDF/mega644P.pdf
 
 ## async
 https://github.com/lights0123/async-avr

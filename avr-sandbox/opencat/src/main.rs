@@ -1,39 +1,59 @@
 #![no_std]
 #![no_main]
 #![feature(abi_avr_interrupt)]
+#![feature(const_in_array_repeat_expressions)]
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
 use arduino_uno::prelude::*;
 use arduino_uno::{Peripherals, Pins, Serial};
 
-#[macro_use]
+// #[macro_use]
 mod logger;
-mod aio;
+// mod aio;
 mod executor;
-mod millis;
-mod panic;
+// mod millis;
+// mod panic;
 
 #[arduino_uno::entry]
 fn main() -> ! {
     let dp = Peripherals::take().unwrap();
-    millis::millis_init(dp.TC0);
+    
     let mut pins = Pins::new(dp.PORTB, dp.PORTC, dp.PORTD);
-    let serial = Serial::new(
+    // https://rahix.github.io/avr-hal/atmega328p_hal/pac/usart0/index.html
+    // https://docs.rs/avr-device/0.3.0/avr_device/atmega328p/usart0/ucsr0b/struct.W.html
+    // dp.USART0.ucsr0a.write(|w|{
+    //     unsafe { w.bits(0b1000_0000) }
+    // });
+    // dp.USART0.ucsr0b.write(|w|{
+    //     w.txcie0().bit(true)
+    //     .rxcie0().bit(true)
+    // });
+    // dp.USART0.ucsr0c.write(|w|{
+    //     unsafe { w.bits(0b0000_0110) }
+    // });
+    // https://rahix.github.io/avr-hal/src/avr_hal_generic/usart.rs.html#439
+    // https://github.com/Rahix/avr-hal/blob/master/chips/atmega328p-hal/src/lib.rs#L210
+    let mut serial = Serial::new(
         dp.USART0,
         pins.d0,
         pins.d1.into_output(&mut pins.ddr),
         9600.into_baudrate(),
     );
+    serial.listen(avr_hal_generic::usart::Event::RxComplete);
+    serial.listen(avr_hal_generic::usart::Event::DataRegisterEmpty);
     let (rx, mut tx) = serial.split();
+    // unsafe { avr_device::interrupt::enable() };
+
     // TWBR = 24
     // 400kHz I2C clock (200kHz if CPU is 8MHz)
-    let mut i2c = arduino_uno::I2cMaster::new(
-        dp.TWI,
-        pins.a4.into_pull_up_input(&mut pins.ddr),
-        pins.a5.into_pull_up_input(&mut pins.ddr),
-        400000,
-    );
+    // https://github.com/rust-embedded/embedded-hal/issues/50
+    // let mut i2c = arduino_uno::I2cMaster::new(
+    //     dp.TWI,
+    //     pins.a4.into_pull_up_input(&mut pins.ddr),
+    //     pins.a5.into_pull_up_input(&mut pins.ddr),
+    //     400000,
+    // );
     // -    0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
     // 00:       -- -- -- -- -- -- -- -- -- -- -- -- -- --
     // 10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
@@ -43,9 +63,12 @@ fn main() -> ! {
     // 50: -- -- -- -- 54 -- -- -- -- -- -- -- -- -- -- --
     // 60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- -- --
     // 70: 70 -- -- -- -- -- -- --
-    i2c.i2cdetect(&mut tx, atmega328p_hal::i2c::Direction::Write)
-        .unwrap();
-    logger::logger_init(tx);
+    // i2c.i2cdetect(&mut tx, atmega328p_hal::i2c::Direction::Write)
+    //     .unwrap();
+    executor::init(dp.TC0);
+    logger::init(tx);
+    // Enable interrupts globally
+    unsafe { avr_device::interrupt::enable() };
 
     // let delay = atmega328p_hal::delay::Delay::<atmega328p_hal::clock::MHz16>::new();
     // let i2cdev = i2cdev::I2cDev::new(i2c, delay);
@@ -62,21 +85,44 @@ fn main() -> ! {
     // mpu.setXGyroOffset(EEPROMReadInt(MPUCALIB + 6));
     // mpu.setYGyroOffset(EEPROMReadInt(MPUCALIB + 8));
     // mpu.setZGyroOffset(EEPROMReadInt(MPUCALIB + 10));
-    let mut rx = aio::serial::AsyncUsartReader::new(rx);
-    executor::block_on(async move {
-        aio::timer::Timeout::new(1000).await;
-        aio::timer::Timeout::new(1000).await;
-        aio::timer::Timeout::new(1000).await;
-        use futures::stream::StreamExt;
-        for b in rx.next().await {
-            uprintln!("Got {}!\r", b);
-            aio::timer::delay(1000).await;
-        }
-    });
-    // loop {
-    //     uprintln!("waiting input");
-    //     // let b = nb::block!(rx.read()).void_unwrap();
-    //     // uprintln!("Got {}!\r", b);
+
+
+    // let task1 = async {
+    //     loop {
+    //         logger::_print("periodic");
+    //         executor::delay_ms(1000).await;
+    //     }
+    // };
+    // let task2 = async {
+    //     for i in 0..10 {
+    //         logger::_print("countdowning");
+    //         executor::delay_ms(300).await;
+    //     }
+    //     logger::_print("countdown end");
+    // };
+    // let task3 = async{
+    //     let mut rx = executor::AsyncUsartReader::from(rx);
+    //     use futures::StreamExt;
+    //     while let Some(b) = rx.next().await {
+    //         logger::_print("gotcha");
+    //         // ufmt::uwriteln!(&mut tx, "done: {}", b).void_unwrap();
+    //         executor::delay_ms(300).await;
+    //     }
+    // };
+    // executor::block_on(futures::future::join3(task1, task2, task3));
+    // // executor::block_on(task3);
+
+        // avr_device::interrupt::free(move |cs| {
+        //     if let Some(tx) = LOGGER.borrow(cs).borrow_mut().as_mut() {
+        //         tx.write_str("hi").unwrap();
+        //     }
+        // });
+        // uprintln!("waiting input");
+        // logger::_printfn("waiting input\n");
+        // logger::_print(format_args!("waiting input\n"));
+        // let b = nb::block!(rx.read()).void_unwrap();
+        // ufmt::uwriteln!(&mut tx, "got{}", b).void_unwrap();
+        // uprintln!("Got {}!\r", b);
 
     //     // let acc = mpu.get_acc_angles().unwrap(); // get roll and pitch estimate
     //     // let temp = mpu.get_temp().unwrap(); // get sensor temp
@@ -92,7 +138,9 @@ fn main() -> ! {
 
     //     // ufmt::uwriteln!(&mut serial, "temp: {}c", temp).void_unwrap();
     //     // ufmt::uwriteln!(&mut serial, "gyro: {}", gyro).void_unwrap();
-    //     // ufmt::uwriteln!(&mut serial, "acc: {}", acc).void_unwrap();
-    // }
-    panic!("ended");
+        // ufmt::uwriteln!(&mut tx, "acc").void_unwrap();
+    loop {
+        logger::_print("ended");
+        arduino_uno::delay_ms(1000);
+    }
 }

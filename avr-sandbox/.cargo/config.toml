@@ -6,7 +6,4 @@ target = "avr-unknown-gnu-atmega328.json"
 build-std = ["core"]
 
 [target.'cfg(target_arch = "avr")']
-runner = "../uno-runner.sh"
-rustflags = [
-    "-C", "link-arg=-Tdefmt.x"
-]
+runner = "uno-runner.sh"

@@ -6,7 +6,7 @@ edition = "2018"
 
 
 [dependencies]
-panic-halt = "0.2"
+# panic-halt = "0.2"
 # https://docs.rs/nb/1.0.0/nb/
 nb = "0.1"
 # https://docs.rs/ufmt/0.1.0/ufmt/
@@ -21,25 +21,27 @@ atmega328p-hal = { git = "https://github.com/rahix/avr-hal", rev = "885e8ec", fe
 arduino-uno = { git = "https://github.com/rahix/avr-hal", rev = "885e8ec" }
 # https://rahix.github.io/avr-hal/avr_hal_generic/
 avr-hal-generic = { git = "https://github.com/rahix/avr-hal", rev = "885e8ec" }
-# derive_more = "0.99"
+void = {version = "1.0", default-features = false}
+derive_more = "0.99"
 # https://docs.rs/mpu6050/0.1.4/mpu6050/
 # mpu6050 = "0.1"
 # drogue-mpu-6050 = { path = "../../drogue-mpu-6050" }
 # either = "1.6"
 # tinyvec = "1.2"
+# heapless = { version = "0.7", default-features = false }
 i2cdev = { path = "../i2cdev" }
-mpu6050 = { path = "../mpu6050" }
+# mpu6050 = { path = "../mpu6050" }
 # numtoa = "0.2"
-embedded-storage = "0.1"
+# embedded-storage = "0.1"
 # defmt = "0.2"
 # generic-array = "0.14"
 # typenum = "1.13"
-as-slice = "0.1"
+# as-slice = "0.1"
 # embedded-time = "0.11"
 # no-panic = "0.1"
-async-avr = { git = "https://github.com/lights0123/async-avr/", branch = "main" }
-pin-utils = "0.1"
-futures = { version = "0.3", default-features = false }
+# async-avr = { git = "https://github.com/lights0123/async-avr/", branch = "main" }
+# pin-utils = "0.1"
+futures = { version = "0.3", default-features = false, features = ["async-await"] }
 
 
 [features]
