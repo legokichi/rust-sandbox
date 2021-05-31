@@ -1,21 +1,17 @@
 [workspace]
-members = [
-    "i2cdev",
-    "mpu6050",
-    "opencat"
-]
+members = ["i2cdev", "mpu6050", "opencat"]
 
 [profile.dev]
-panic = "abort"
 lto = true
 opt-level = "s"
+panic = "abort"
 
 [profile.release]
-panic = "abort"
 codegen-units = 1
 debug = true
 lto = true
 opt-level = "s"
+panic = "abort"
 
 [patch.crates-io]
 # libm = { path = "../../libm" }

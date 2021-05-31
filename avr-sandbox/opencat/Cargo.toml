@@ -25,9 +25,30 @@ avr-hal-generic = { git = "https://github.com/rahix/avr-hal", rev = "885e8ec" }
 # https://docs.rs/mpu6050/0.1.4/mpu6050/
 # mpu6050 = "0.1"
 # drogue-mpu-6050 = { path = "../../drogue-mpu-6050" }
-# heapless = "0.7"
 # either = "1.6"
 # tinyvec = "1.2"
 i2cdev = { path = "../i2cdev" }
 mpu6050 = { path = "../mpu6050" }
+# numtoa = "0.2"
+embedded-storage = "0.1"
+# defmt = "0.2"
+# generic-array = "0.14"
+# typenum = "1.13"
+as-slice = "0.1"
+# embedded-time = "0.11"
+# no-panic = "0.1"
+async-avr = { git = "https://github.com/lights0123/async-avr/", branch = "main" }
+pin-utils = "0.1"
+futures = { version = "0.3", default-features = false }
 
+
+[features]
+# defmt-default = []
+# defmt-trace = []
+# defmt-debug = []
+# defmt-info = []
+# defmt-warn = []
+# defmt-error = []
+# default = [
+#   "defmt-default"
+# ]

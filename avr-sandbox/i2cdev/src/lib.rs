@@ -1,15 +1,15 @@
 #![no_std]
 
-use embedded_hal::blocking::i2c::{WriteRead, Write};
 use embedded_hal::blocking::delay::DelayMs;
+use embedded_hal::blocking::i2c::{Write, WriteRead};
 
-pub const BUFFER_LENGTH:usize  = 32;
+pub const BUFFER_LENGTH: usize = 32;
 pub const DEFAULT_READ_TIMEOUT: u16 = 1000;
 
-pub struct I2cDev<I2c, Delay>{
+pub struct I2cDev<I2c, Delay> {
     i2c: I2c,
     #[allow(dead_code)]
-    delay: Delay
+    delay: Delay,
 }
 
 impl<I2c, Delay> I2cDev<I2c, Delay>
@@ -17,13 +17,10 @@ where
     I2c: Write + WriteRead,
     // <I2c as WriteRead>::Error: core::fmt::Debug,
     // <I2c as Write>::Error: core::fmt::Debug,
-    Delay: DelayMs<u16>
+    Delay: DelayMs<u16>,
 {
     pub fn new(i2c: I2c, delay: Delay) -> Self {
-        Self{
-            i2c,
-            delay
-        }
+        Self { i2c, delay }
     }
     // /** Read a single bit from an 8-bit device register.
     // * @param devAddr I2C slave device address
@@ -199,7 +196,6 @@ where
         // Ok(())
     }
 
-        
     // /** write a single bit in an 8-bit device register.
     // * @param devAddr I2C slave device address
     // * @param regAddr Register regAddr to write to
@@ -208,7 +204,13 @@ where
     // * @return Status of operation (true = success)
     // */
     // bool I2Cdev::writeBit(uint8_t devAddr, uint8_t regAddr, uint8_t bitNum, uint8_t data) {
-    pub fn write_bit(&mut self, dev_addr: u8, reg_addr: u8, bit_num: u8, data: bool) -> Result<(), ()> {
+    pub fn write_bit(
+        &mut self,
+        dev_addr: u8,
+        reg_addr: u8,
+        bit_num: u8,
+        data: bool,
+    ) -> Result<(), ()> {
         let mut byte: [u8; 1] = [0; 1];
         self.read_bytes(dev_addr, reg_addr, &mut byte, None)?;
         set_bit(&mut byte[0], bit_num, data);
@@ -224,7 +226,13 @@ where
     //  */
     // bool I2Cdev::writeBitW(uint8_t devAddr, uint8_t regAddr, uint8_t bitNum, uint16_t data) {
     #[allow(unused_variables)]
-    pub fn write_bit_word(&mut self, dev_addr: u8, reg_addr: u8, bit_num: u8, data: bool) -> Result<(), ()> {
+    pub fn write_bit_word(
+        &mut self,
+        dev_addr: u8,
+        reg_addr: u8,
+        bit_num: u8,
+        data: bool,
+    ) -> Result<(), ()> {
         unimplemented!()
     }
     // /** Write multiple bits in an 8-bit device register.
@@ -402,7 +410,7 @@ pub fn set_bit(byte: &mut u8, n: u8, enable: bool) {
     }
 }
 #[test]
-fn set_bit(){
+fn set_bit() {
     assert_eq!(set_bit(0b00000000, 7, 8), 0b00000011);
     assert_eq!(set_bit(0b00000000, 7, 7), 0b00000010);
 }
