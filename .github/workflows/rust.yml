@@ -1,0 +1,43 @@
+# This is a basic workflow to help you get started with Actions
+name: Rust
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches:
+      - master
+  pull_request:
+    branches: [ master ]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  check-format:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: -- --check
+
+  clippy:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+
+  coverage:
+    runs-on: ubuntu-18.04
+    container:
+      image: ghcr.io/rust-math/intel-mkl-src/mkl-rust:1.49.0
+      options: --security-opt seccomp=unconfined
+    steps:
+      - uses: actions/checkout@v2
+      - name: Generate code coverage
+        run: |
+          cargo tarpaulin --verbose --features=intel-mkl --out Xml --manifest-path=ndarray-linalg/Cargo.toml
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v1
