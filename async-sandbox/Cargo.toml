@@ -10,11 +10,11 @@ edition = "2018"
 err-derive = "0.1"
 runtime = { version = "0.3.0-alpha.5", default-features = true }
 runtime-tokio = "0.3.0-alpha.5"
-futures-preview = { version = "=0.3.0-alpha.16", features = ["async-await", "nightly"] }
+# futures-preview = { version = "=0.3.0-alpha.16", features = ["async-await", "nightly"] }
 tokio-timer = "0.2"
-tracing = { git = "https://github.com/tokio-rs/tracing.git" }
-tracing-env-logger = { git = "https://github.com/tokio-rs/tracing.git" }
-tracing-futures = { git = "https://github.com/tokio-rs/tracing.git" }
-tracing-log = { git = "https://github.com/tokio-rs/tracing.git" }
+# tracing = { git = "https://github.com/tokio-rs/tracing.git" }
+# tracing-env-logger = { git = "https://github.com/tokio-rs/tracing.git" }
+# tracing-futures = { git = "https://github.com/tokio-rs/tracing.git" }
+# tracing-log = { git = "https://github.com/tokio-rs/tracing.git" }
 log = "*"
 

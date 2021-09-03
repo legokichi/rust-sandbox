@@ -1,5 +1,5 @@
 [package]
-name = "device-api"
+name = "device-api-a"
 version = "0.1.0"
 authors = ["Legokichi Duckscallion <legokichi@gmail.com>"]
 edition = "2018"

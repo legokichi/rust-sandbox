@@ -7,12 +7,12 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ndarray = { version = "0.13", features = ["serde", "rayon"] }
-ndarray-linalg = { version = "0.12", features = ["openblas"] }
-ndarray-stats = "0.3"
-ndarray-rand = "0.11"
-plotters = "0.2"
-num = "0.2"
-ndarray-npy = "0.5"
-ndarray_einsum_beta = "0.5"
-ndarray-image = "0.1"
+# ndarray = { version = "0.13", features = ["serde", "rayon"] }
+# ndarray-linalg = { version = "0.12", features = ["openblas"] }
+# ndarray-stats = "0.3"
+# ndarray-rand = "0.11"
+# plotters = "0.2"
+# num = "0.2"
+# ndarray-npy = "0.5"
+# ndarray_einsum_beta = "0.5"
+# ndarray-image = "0.1"

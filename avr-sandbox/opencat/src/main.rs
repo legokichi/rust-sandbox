@@ -7,7 +7,7 @@
 
 use arduino_uno::prelude::*;
 use arduino_uno::{Peripherals, Pins, Serial};
-
+use avr_hal_generic::usart::Event::{RxComplete, DataRegisterEmpty};
 // #[macro_use]
 mod logger;
 // mod aio;
@@ -18,42 +18,26 @@ mod executor;
 #[arduino_uno::entry]
 fn main() -> ! {
     let dp = Peripherals::take().unwrap();
-    
     let mut pins = Pins::new(dp.PORTB, dp.PORTC, dp.PORTD);
-    // https://rahix.github.io/avr-hal/atmega328p_hal/pac/usart0/index.html
-    // https://docs.rs/avr-device/0.3.0/avr_device/atmega328p/usart0/ucsr0b/struct.W.html
-    // dp.USART0.ucsr0a.write(|w|{
-    //     unsafe { w.bits(0b1000_0000) }
-    // });
-    // dp.USART0.ucsr0b.write(|w|{
-    //     w.txcie0().bit(true)
-    //     .rxcie0().bit(true)
-    // });
-    // dp.USART0.ucsr0c.write(|w|{
-    //     unsafe { w.bits(0b0000_0110) }
-    // });
-    // https://rahix.github.io/avr-hal/src/avr_hal_generic/usart.rs.html#439
-    // https://github.com/Rahix/avr-hal/blob/master/chips/atmega328p-hal/src/lib.rs#L210
     let mut serial = Serial::new(
         dp.USART0,
         pins.d0,
         pins.d1.into_output(&mut pins.ddr),
         9600.into_baudrate(),
     );
-    serial.listen(avr_hal_generic::usart::Event::RxComplete);
-    serial.listen(avr_hal_generic::usart::Event::DataRegisterEmpty);
+    serial.listen(RxComplete);
+    serial.listen(DataRegisterEmpty);
     let (rx, mut tx) = serial.split();
-    // unsafe { avr_device::interrupt::enable() };
-
+    
     // TWBR = 24
     // 400kHz I2C clock (200kHz if CPU is 8MHz)
     // https://github.com/rust-embedded/embedded-hal/issues/50
-    // let mut i2c = arduino_uno::I2cMaster::new(
-    //     dp.TWI,
-    //     pins.a4.into_pull_up_input(&mut pins.ddr),
-    //     pins.a5.into_pull_up_input(&mut pins.ddr),
-    //     400000,
-    // );
+    let mut i2c = arduino_uno::I2cMaster::new(
+        dp.TWI,
+        pins.a4.into_pull_up_input(&mut pins.ddr),
+        pins.a5.into_pull_up_input(&mut pins.ddr),
+        400000,
+    );
     // -    0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
     // 00:       -- -- -- -- -- -- -- -- -- -- -- -- -- --
     // 10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
@@ -65,8 +49,8 @@ fn main() -> ! {
     // 70: 70 -- -- -- -- -- -- --
     // i2c.i2cdetect(&mut tx, atmega328p_hal::i2c::Direction::Write)
     //     .unwrap();
-    executor::init(dp.TC0);
     logger::init(tx);
+    executor::init(dp.TC0);
     // Enable interrupts globally
     unsafe { avr_device::interrupt::enable() };
 
@@ -85,7 +69,9 @@ fn main() -> ! {
     // mpu.setXGyroOffset(EEPROMReadInt(MPUCALIB + 6));
     // mpu.setYGyroOffset(EEPROMReadInt(MPUCALIB + 8));
     // mpu.setZGyroOffset(EEPROMReadInt(MPUCALIB + 10));
-
+    // let mut buffer = ryu::Buffer::new();
+    // let printed = buffer.format(1.234);
+// assert_eq!(printed, "1.234");
 
     // let task1 = async {
     //     loop {

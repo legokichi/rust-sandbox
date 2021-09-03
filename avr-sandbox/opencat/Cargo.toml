@@ -42,7 +42,7 @@ i2cdev = { path = "../i2cdev" }
 # async-avr = { git = "https://github.com/lights0123/async-avr/", branch = "main" }
 # pin-utils = "0.1"
 futures = { version = "0.3", default-features = false, features = ["async-await"] }
-
+ryu = "1.0"
 
 [features]
 # defmt-default = []

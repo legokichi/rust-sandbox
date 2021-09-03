@@ -37,7 +37,10 @@ static TIMERS: Mutex<RefCell<[Option<u32>; 7]>> = Mutex::new(RefCell::new([None;
 static READER: Mutex<RefCell<Option<Rx>>> = Mutex::new(RefCell::new(None));
 
 pub fn init(tc0: arduino_uno::pac::TC0) {
-    // , tx: Tx, rx: Rx
+    // https://rahix.github.io/avr-hal/src/avr_hal_generic/usart.rs.html#439
+    // https://github.com/Rahix/avr-hal/blob/master/chips/atmega328p-hal/src/lib.rs#L210
+    // https://rahix.github.io/avr-hal/atmega328p_hal/pac/usart0/index.html
+    // https://docs.rs/avr-device/0.3.0/avr_device/atmega328p/usart0/ucsr0b/struct.W.html
     // Configure the timer for the above interval (in CTC mode)
     // and enable its interrupt.
     tc0.tccr0a.write(|w| w.wgm0().ctc());
@@ -55,8 +58,6 @@ pub fn init(tc0: arduino_uno::pac::TC0) {
     avr_device::interrupt::free(|cs| {
         MILLIS_COUNTER.borrow(cs).set(0);
     });
-
-    
 }
 
 #[avr_device::interrupt(atmega328p)]

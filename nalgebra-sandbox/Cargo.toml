@@ -7,11 +7,11 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-alga = "0.9"
-nalgebra = { version = "0.20", features = ["serde-serialize"] }
-nalgebra-lapack = { version = "0.12" }
-approx = "0.3"
-typenum = "1.11"
-plotters = { git = "https://github.com/38/plotters", branch = "master" }
-rusttype = "0.8"
-font-kit = "0.4"
+# alga = "0.9"
+# nalgebra = { version = "0.20", features = ["serde-serialize"] }
+# nalgebra-lapack = { version = "0.12" }
+# approx = "0.3"
+# typenum = "1.11"
+# plotters = { git = "https://github.com/38/plotters", branch = "master" }
+# rusttype = "0.8"
+# font-kit = "0.4"
