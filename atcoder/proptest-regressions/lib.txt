@@ -1,0 +1,13 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 62fd784e5bc30109242dc75eb20294c3b81eb25324d5b394b18895dcfbdc6c4e # shrinks to m = 50, k = [49]
+cc 45f82a5ff1d854ccd658ef6a52124fcc8a59b3db7b86e1b247ce907d62337f13 # shrinks to l = 0, mut x = []
+cc e4df3b8e56913ac51ec0fae669484f928ee58f14db115a3d10a6dcfa6531aa99 # shrinks to m = 255, mut k = [254]
+cc a0ad0216e9a400083bf409e36e668101ccc094ae4dbcbed87505f2456c49864b # shrinks to l = 20, mut x = [0]
+cc fbf4aaeefd58f76571712946496d4f0a648ef7f3163835ad36b1c73b105a9ff1 # shrinks to m = 187, mut k = [25, 0, 117, 46, 20]
+cc 6a4bcb2d00cdfdc40a9aaa3a7bb929d734e612d61650fa96863d42ae18837891 # shrinks to mut s = [87, 178, 64, 159, 73, 13, 52, 143, 100, 83, 2, 0], k = 0
+cc e5cc74967bfd9932df8643d8aa0e5bc92c67295973b53b889c156937769a6bee # shrinks to mut s = [], k = 0
