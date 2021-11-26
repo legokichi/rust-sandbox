@@ -1,0 +1,5 @@
+[build]
+rustc-wrapper = "/home/legokichi/.cargo/bin/sccache"
+rustflags = []
+
+
