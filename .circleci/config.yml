@@ -1,6 +1,18 @@
 version: 2.1
 
 commands:
+  make_build-env:
+    parameters:
+      directory:
+        type: string
+    steps:
+      - run:
+          name: Make /tmp/build-env file to use as cache key
+          command: |
+            cd "<<parameters.directory>>"
+            echo $OS_VERSION | tee /tmp/build-env
+            rustc --version | tee -a /tmp/build-env
+
   save_cargo_cache:
     parameters:
       directory:
