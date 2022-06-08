@@ -1,2 +1,2 @@
 fixes:
-  - "grcov-sandbox/::"
+  - "::grcov-sandbox/"
