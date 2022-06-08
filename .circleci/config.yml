@@ -1,7 +1,8 @@
 version: 2.1
 
 commands:
-  make_build-env:
+
+  save_cargo_cache:
     parameters:
       directory:
         type: string
@@ -12,14 +13,6 @@ commands:
             cd "<<parameters.directory>>"
             echo $OS_VERSION | tee /tmp/build-env
             rustc --version | tee -a /tmp/build-env
-
-  save_cargo_cache:
-    parameters:
-      directory:
-        type: string
-    steps:
-      - make_build-env:
-          directory: <<parameters.directory>>
       - save_cache:
           key: cache-cargo-target-{{ .Environment.CIRCLECI_CACHE_VERSION }}-<<parameters.directory>>-{{ checksum "/tmp/build-env" }}-{{ checksum "<<parameters.directory>>/Cargo.lock" }}
           paths:
@@ -33,8 +26,12 @@ commands:
       directory:
         type: string
     steps:
-      - make_build-env:
-        directory: <<parameters.directory>>
+      - run:
+          name: Make /tmp/build-env file to use as cache key
+          command: |
+            cd "<<parameters.directory>>"
+            echo $OS_VERSION | tee /tmp/build-env
+            rustc --version | tee -a /tmp/build-env
       - run: |
           sudo chown -R circleci /home/circleci/.cargo/
       - restore_cache:
