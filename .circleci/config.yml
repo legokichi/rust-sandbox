@@ -54,6 +54,7 @@ jobs:
           directory: ./grcov-sandbox
       - run: cargo install grcov || exit 0
       - run: rustup component add llvm-tools-preview || exit 0
+      - run: cargo clean
       - run: cd grcov-sandbox && RUSTFLAGS="-C instrument-coverage" LLVM_PROFILE_FILE="your_name-%p-%m.profraw" cargo test
       - save_cargo_cache:
           directory: ./grcov-sandbox
