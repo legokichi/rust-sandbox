@@ -19,7 +19,7 @@ commands:
         type: string
     steps:
       - make_build-env:
-          directory: device-api
+          directory: <<parameters.directory>>
       - save_cache:
           key: cache-cargo-target-{{ .Environment.CIRCLECI_CACHE_VERSION }}-<<parameters.directory>>-{{ checksum "/tmp/build-env" }}-{{ checksum "<<parameters.directory>>/Cargo.lock" }}
           paths:
@@ -34,7 +34,7 @@ commands:
         type: string
     steps:
       - make_build-env:
-          directory: device-api
+        directory: <<parameters.directory>>
       - run: |
           sudo chown -R circleci /home/circleci/.cargo/
       - restore_cache:
