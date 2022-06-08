@@ -1,4 +1,35 @@
 version: 2.1
+
+commands:
+  save_cargo_cache:
+    parameters:
+      directory:
+        type: string
+    steps:
+      - make_build-env:
+          directory: device-api
+      - save_cache:
+          key: cache-cargo-target-{{ .Environment.CIRCLECI_CACHE_VERSION }}-<<parameters.directory>>-{{ checksum "/tmp/build-env" }}-{{ checksum "<<parameters.directory>>/Cargo.lock" }}
+          paths:
+            - /home/circleci/.cargo/bin/
+            - /home/circleci/.cargo/git/
+            - /home/circleci/.cargo/registry/
+            - target
+
+  restore_cargo_cache:
+    parameters:
+      directory:
+        type: string
+    steps:
+      - make_build-env:
+          directory: device-api
+      - run: |
+          sudo chown -R circleci /home/circleci/.cargo/
+      - restore_cache:
+          keys:
+            - cache-cargo-target-{{ .Environment.CIRCLECI_CACHE_VERSION }}-<<parameters.directory>>-{{ checksum "/tmp/build-env" }}-{{ checksum "<<parameters.directory>>/Cargo.lock" }}
+            - cache-cargo-target-{{ .Environment.CIRCLECI_CACHE_VERSION }}-<<parameters.directory>>-{{ checksum "/tmp/build-env" }}-
+
 workflows:
   build_and_test:
     jobs:
@@ -10,10 +41,15 @@ jobs:
       - image: cimg/rust:1.61.0
     steps:
       - checkout
+      - restore_cargo_cache:
+          directory: .
       - run: cargo install grcov
       - run: rustup component add llvm-tools-preview
-      - run: RUSTFLAGS="-C instrument-coverage" cargo test
-      - run: grcov . -s . --binary-path ./target/debug/ -t cobertura --branch --ignore-not-existing -o ./target/debug/coverage/
+      - run: cd grcov-sandbox && RUSTFLAGS="-C instrument-coverage" cargo test
+      - save_cargo_cache:
+          directory: .
+      - run: cd grcov-sandbox && grcov . -s . --binary-path ./target/debug/ -t cobertura --branch --ignore-not-existing -o ./target/debug/coverage/
       - run: curl -Os https://uploader.codecov.io/latest/linux/codecov
       - run: chmod +x codecov
-      - run: ./codecov
+      - run: cd grcov-sandbox && ../codecov
+
