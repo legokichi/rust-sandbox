@@ -1,7 +1,9 @@
 version: 2.1
 
-commands:
+orbs: 
+  codecov: codecov/codecov@3.2.3
 
+commands:
   save_cargo_cache:
     parameters:
       directory:
@@ -51,14 +53,12 @@ jobs:
     steps:
       - checkout
       - restore_cargo_cache:
-          directory: .
+          directory: ./grcov-sandbox
       - run: cargo install grcov
       - run: rustup component add llvm-tools-preview
       - run: cd grcov-sandbox && RUSTFLAGS="-C instrument-coverage" cargo test
       - save_cargo_cache:
-          directory: .
+          directory: ./grcov-sandbox
       - run: cd grcov-sandbox && grcov . -s . --binary-path ./target/debug/ -t cobertura --branch --ignore-not-existing -o ./target/debug/coverage/
-      - run: curl -Os https://uploader.codecov.io/latest/linux/codecov
-      - run: chmod +x codecov
-      - run: cd grcov-sandbox && ../codecov
+      - codecov/upload
 
