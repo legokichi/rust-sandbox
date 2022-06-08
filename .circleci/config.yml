@@ -52,7 +52,7 @@ jobs:
       - checkout
       - restore_cargo_cache:
           directory: ./grcov-sandbox
-      - run: cargo install grcov -f
+      - run: cargo install grcov || exit 0
       - run: rustup component add llvm-tools-preview
       - run: cd grcov-sandbox && RUSTFLAGS="-C instrument-coverage" cargo test
       - save_cargo_cache:
