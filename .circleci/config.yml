@@ -58,7 +58,7 @@ jobs:
       - run: cd grcov-sandbox && RUSTFLAGS="-C instrument-coverage" LLVM_PROFILE_FILE="your_name-%p-%m.profraw" cargo test
       - save_cargo_cache:
           directory: ./grcov-sandbox
-      - run: grcov ./grcov-sandbox -s ./grcov-sandbox --binary-path ./grcov-sandbox/target/debug/ -t lcov --branch --ignore-not-existing -o lcov.info
+      - run: cd grcov-sandbox && grcov . -s . --binary-path ./target/debug/ -t lcov --branch --ignore-not-existing -o lcov.info
       - run: cd grcov-sandbox && curl -Os https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov && ./codecov
 
 
