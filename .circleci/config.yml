@@ -59,6 +59,6 @@ jobs:
       - run: cd grcov-sandbox && RUSTFLAGS="-C instrument-coverage" cargo test
       - save_cargo_cache:
           directory: ./grcov-sandbox
-      - run: cd grcov-sandbox && grcov . -s . --binary-path ./target/debug/ -t cobertura --branch --ignore-not-existing -o ./target/debug/coverage/
-      - codecov/upload
+      - run: cd grcov-sandbox && grcov . -s . --binary-path ./target/debug/ -t lcov --branch --ignore-not-existing -o lcov.info
+      - run: bash <(curl -s https://codecov.io/bash) -f lcov.info
 
