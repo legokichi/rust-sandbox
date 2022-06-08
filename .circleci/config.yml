@@ -59,6 +59,6 @@ jobs:
       - save_cargo_cache:
           directory: ./grcov-sandbox
       - run: cd grcov-sandbox && grcov . -s . --binary-path ./target/debug/ -t lcov --branch --ignore-not-existing -o lcov.info
-      - run: curl -Os https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov && ./codecov -R grcov-sandbox
+      - run: curl -Os https://uploader.codecov.io/latest/linux/codecov && chmod +x codecov && ./codecov -R grcov-sandbox -F grcov-sandbox
 
 

@@ -1,2 +1,8 @@
+flags:
+  grcov_sandbox:
+    carryforward: true
+    paths:
+        - grcov-sandbox/
+
 fixes:
   - "::grcov-sandbox/"
