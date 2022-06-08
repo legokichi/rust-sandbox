@@ -53,8 +53,8 @@ jobs:
       - restore_cargo_cache:
           directory: ./grcov-sandbox
       - run: cargo install grcov || exit 0
-      - run: rustup component add llvm-tools-preview
-      - run: cd grcov-sandbox && RUSTFLAGS="-C instrument-coverage" cargo test
+      - run: rustup component add llvm-tools-preview || exit 0
+      - run: cd grcov-sandbox && RUSTFLAGS="-C instrument-coverage" LLVM_PROFILE_FILE="your_name-%p-%m.profraw" cargo test
       - save_cargo_cache:
           directory: ./grcov-sandbox
       - run: cd grcov-sandbox && grcov . -s . --binary-path ./target/debug/ -t lcov --branch --ignore-not-existing -o lcov.info
