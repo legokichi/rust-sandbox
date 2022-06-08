@@ -1,0 +1,19 @@
+version: 2.1
+workflows:
+  build_and_test:
+    jobs:
+      - test
+
+jobs:
+  test:
+    docker:
+      - image: cimg/rust:1.61.0
+    steps:
+      - checkout
+      - run: cargo install grcov
+      - run: rustup component add llvm-tools-preview
+      - run: RUSTFLAGS="-C instrument-coverage" cargo test
+      - run: grcov . -s . --binary-path ./target/debug/ -t cobertura --branch --ignore-not-existing -o ./target/debug/coverage/
+      - run: curl -Os https://uploader.codecov.io/latest/linux/codecov
+      - run: chmod +x codecov
+      - run: ./codecov
