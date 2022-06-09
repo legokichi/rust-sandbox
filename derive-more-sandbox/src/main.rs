@@ -1,5 +1,9 @@
 use std::convert::TryInto;
+#[derive(derive_more::Display, Debug)]
+struct Hoge(String);
 fn main() {
+    let hoge = Hoge("a".into());
+    println!("{hoge}:{hoge:?}");
     let o = InbokeLambdaSuccessResponse::Foo(LambdaResponse::Ok(0));
     let o: LambdaResponse<i32, i32> = o.try_into().unwrap();
     println!("Hello, world!");

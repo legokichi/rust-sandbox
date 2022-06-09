@@ -5,4 +5,4 @@ flags:
         - grcov-sandbox/
 
 fixes:
-  - "::grcov-sandbox/"
+  - "/home/circleci/::"
