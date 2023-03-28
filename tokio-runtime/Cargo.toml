@@ -1,0 +1,23 @@
+[package]
+name = "tokio-runtime"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+flume = { version = "0.10", features = ["async"] }
+tokio = { version = "1.13", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["sync", "signal", "net", "fs", "io-util", "tokio-util"] }
+tokio-util = { version = "0.7", features = ["full"] }
+futures = { version = "0.3" }
+futures-util = "0.3"
+async-trait = "0.1"
+async-stream = "0.3"
+log = "0.4"
+env_logger = "0.10"
+tracing = { version = "0.1", features = ["log"] }
+tracing-futures = { vesion = "0.2", features = ["tokio", "futures-03"] }
+tracing-subscriber = "0.3"
+anyhow = "1"
+thiserror = "1"
