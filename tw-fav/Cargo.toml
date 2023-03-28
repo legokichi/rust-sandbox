@@ -7,16 +7,16 @@ edition = "2018"
 [dependencies]
 chrono = "0.4"
 dotenv = "0.15"
-egg-mode = { git = "https://github.com/QuietMisdreavus/twitter-rs", branch = "master" }
-env_logger = "0.7"
+egg-mode = "0.16"
+env_logger = "0.10"
 envy = "0.4"
-err-derive = "0.2"
+thiserror = "1"
 futures = { version = "0.3", features = [] }
 log = "0.4"
-reqwest = "0.10"
-rustyline = "6.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-clap = { git = "https://github.com/clap-rs/clap", branch = "master" }
-tokio = { version = "0.2", features = ["fs", "time"] }
+reqwest = "0.11"
+rustyline = "10.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+clap = "4"
+tokio = { version = "1", features = ["full"] }
 
