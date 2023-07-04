@@ -1,0 +1,11 @@
+[package]
+name = "rusoto_iot"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rusoto_core = "0.48"
+rusoto_iot = "0.48"
+tokio = "1"
