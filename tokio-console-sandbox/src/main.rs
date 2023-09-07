@@ -1,23 +1,17 @@
 #[tokio::main]
 async fn main() {
-    // choose subscribers
-    //tracing_log::LogTracer::init().unwrap();
-    //tracing_log::env_logger::init();
-    tracing_subscriber::fmt::init();
     //console_subscriber::init();
 
-    let app = axum::Router::new().route("/", axum::routing::get(root));
-    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 3000));
-    tracing::debug!("listening on {}", addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
+    loop {
+        tokio::task::spawn_blocking(move || {
+            //tokio::time::sleep(std::time::Duration::from_nanos(5)).await;
+            std::thread::sleep(std::time::Duration::from_nanos(5));
+            println!("hello");
+        })
+        .await.unwrap();
+        //tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        interval.tick().await;
+    }
 }
 
-#[tracing::instrument]
-async fn root() -> &'static str {
-    log::debug!("log");
-    tracing::debug!("tracing");
-    "Hello, World!"
-}

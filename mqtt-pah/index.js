@@ -60,11 +60,11 @@ server.listen(port, function () {
 
   aedes.on("clientReady", (client)=>{
     console.log("aedes clientReady");
-    setTimeout(()=>{
-      console.log("aedes client closing");
-      client.close(()=>{
-        console.log("aedes client closed");
-      });
-    }, 6000);
+    //setTimeout(()=>{
+    //  console.log("aedes client closing");
+    //  client.close(()=>{
+    //    console.log("aedes client closed");
+    //  });
+    //}, 6000);
   });
 });
