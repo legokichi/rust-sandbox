@@ -1,0 +1,23 @@
+[package]
+name = "kinesis-dlq"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+aws-config = "0.56.1"
+aws-sdk-kinesis = "0.31.1"
+aws-sdk-sqs = "0.31.1"
+aws-sdk-lambda = "0.31.1"
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+anyhow = "1"
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+uuid = { version = "1.4", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+aws-smithy-types-convert = { version = "0.56.1", features = ["convert-chrono"] }
+num-bigint = "0.4"
+dotenvy = "0.15"
