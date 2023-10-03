@@ -269,7 +269,7 @@ async fn test(
                 approximate_arrival_of_first_record: _,
                 approximate_arrival_of_last_record: _,
                 batch_size: _,
-                stream_arn,
+                stream_arn: _,
             } = dlr.kinesis_batch_info;
             dbg!(end_sequence_number.clone() == start_sequence_number.clone());
             let aws_sdk_kinesis::operation::get_shard_iterator::GetShardIteratorOutput {
