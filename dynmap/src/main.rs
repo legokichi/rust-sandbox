@@ -66,7 +66,7 @@ async fn main() {
             let r#type = update.pointer("/type").unwrap().as_str().unwrap();
             if r#type == "chat" {
                 let timestamp = update.pointer("/timestamp").unwrap().as_i64().unwrap();
-                let account = update.pointer("/account").unwrap().as_str().unwrap();
+                let account = format!("{:?}", update.pointer("/account"));
                 let name = update.pointer("/playerName").unwrap().as_str().unwrap();
                 let message = update.pointer("/message").unwrap().as_str().unwrap();
                 let date_str = {
