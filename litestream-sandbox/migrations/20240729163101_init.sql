@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS points
+(
+    id        TEXT NOT NULL PRIMARY KEY,
+    timestamp TEXT NOT NULL
+);

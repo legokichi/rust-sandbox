@@ -1,5 +1,5 @@
 [workspace]
-members = ["i2cdev", "mpu6050", "opencat"]
+members = [ "avr-serial","i2cdev", "mpu6050", "opencat"]
 
 [profile.dev]
 lto = true
