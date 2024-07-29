@@ -2,15 +2,17 @@ pub async fn list_points(
     pool: &sqlx::sqlite::SqlitePool,
     query: &crate::model::PointsQuery,
 ) -> Result<(Vec<crate::model::Point>, u32), anyhow::Error> {
+    let limit = query.limit.unwrap_or(20);
+    let offset = query.offset.unwrap_or(0);
     let rows = sqlx::query_as!(
         crate::model::Point,
         "SELECT * FROM points ORDER BY timestamp ASC LIMIT ?1 OFFSET ?2",
-        query.limit,
-        query.offset
+        limit,
+        offset
     )
     .fetch_all(pool)
     .await?;
-    let next = query.offset + rows.len() as u32;
+    let next = offset + rows.len() as u32;
     Ok((rows, next))
 }
 
@@ -83,8 +85,8 @@ mod tests {
             let (rows, next) = list_points(
                 &pool,
                 &crate::model::PointsQuery {
-                    offset: 0,
-                    limit: 1,
+                    offset: Some(0),
+                    limit: Some(1),
                 },
             )
             .await
@@ -106,8 +108,8 @@ mod tests {
             let (rows, next) = list_points(
                 &pool,
                 &crate::model::PointsQuery {
-                    offset: 0,
-                    limit: 1,
+                    offset: Some(0),
+                    limit: Some(1),
                 },
             )
             .await
@@ -118,8 +120,8 @@ mod tests {
             let (rows, next) = list_points(
                 &pool,
                 &crate::model::PointsQuery {
-                    offset: 1,
-                    limit: 1,
+                    offset: Some(1),
+                    limit: Some(1),
                 },
             )
             .await

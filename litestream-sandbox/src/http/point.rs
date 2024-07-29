@@ -3,7 +3,11 @@ pub async fn list_points(
     axum::extract::State(ref pool): axum::extract::State<sqlx::sqlite::SqlitePool>,
     axum::extract::Query(ref query): axum::extract::Query<crate::model::PointsQuery>,
 ) -> Result<(axum::http::StatusCode, axum::Json<serde_json::Value>), crate::http::Ise> {
-    let rows = crate::db::list_points(pool, query).await?;
+    let (rows, offest) = crate::db::list_points(pool, query).await?;
+    let rows = crate::model::List {
+        offset: Some(offest),
+        list: rows,
+    };
     let rows = serde_json::to_value(&rows)?;
     Ok((axum::http::StatusCode::OK, rows.into()))
 }
@@ -65,8 +69,7 @@ mod tests {
         env_logger::builder().is_test(true).try_init().ok();
         use tower::ServiceExt;
         let app = crate::http::app().with_state(pool);
-        let req = axum::http::Request::builder()
-            .uri("/points")
+        let req = axum::http::Request::get("/points")
             .body(axum::body::Body::empty())
             .unwrap();
         let response = app.oneshot(req).await.unwrap();
@@ -74,6 +77,6 @@ mod tests {
         assert_eq!(response.status(), axum::http::StatusCode::OK);
 
         let body = response.into_body().collect().await.unwrap().to_bytes();
-        assert_eq!(&body[..], b"Hello, World!");
+        assert_eq!(std::str::from_utf8(&body[..]).unwrap(), r##"{"list":[],"offset":0}"##);
     }
 }
