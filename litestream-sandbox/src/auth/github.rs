@@ -8,17 +8,9 @@ pub struct Credentials {
     pub new_state: oauth2::CsrfToken,
 }
 
-#[derive(Debug, serde::Deserialize)]
-struct GithubUserInfo {
-    // legokichi
-    // login: String,
-    // github unique id
-    id: i64,
-}
-
 #[derive(Debug, thiserror::Error)]
 #[error(transparent)]
-pub struct BackendError(#[from] anyhow::Error);
+pub struct BackendError(#[from] pub anyhow::Error);
 
 #[derive(Debug, Clone)]
 pub struct Backend {
@@ -82,6 +74,16 @@ impl axum_login::AuthnBackend for Backend {
             .map_err(anyhow::Error::from)?;
         // Use access token to request user info.
         // https://docs.github.com/ja/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
+
+        #[derive(Debug, serde::Deserialize)]
+        struct GithubUserInfo {
+            // legokichi
+            #[allow(dead_code)]
+            login: String,
+            // github unique id
+            id: i64,
+        }
+
         let res = reqwest::Client::new()
             .get("https://api.github.com/user")
             .header(axum::http::header::USER_AGENT.as_str(), "axum-login")
@@ -100,9 +102,12 @@ impl axum_login::AuthnBackend for Backend {
             serde_json::from_str::<GithubUserInfo>(&user_info).map_err(anyhow::Error::from)?;
 
         // Persist user in our database so we can use `get_user`.
-        let user = crate::db::user::create_user(&self.db, Some(user_info.id), None)
-            .await
-            .map_err(anyhow::Error::from)?;
+        let user = crate::db::user::create_user(
+            &self.db,
+            crate::db::user::OAuthProvider::Github(user_info.id, user_info.login),
+        )
+        .await
+        .map_err(anyhow::Error::from)?;
 
         Ok(Some(user))
     }

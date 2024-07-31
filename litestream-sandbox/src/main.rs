@@ -7,8 +7,10 @@ mod model;
 struct Config {
     host_addr: String,
     database_url: String,
-    client_id: oauth2::ClientId,
-    client_secret: oauth2::ClientSecret,
+    facebook_client_id: oauth2::ClientId,
+    facebook_client_secret: oauth2::ClientSecret,
+    github_client_id: oauth2::ClientId,
+    github_client_secret: oauth2::ClientSecret,
     redirect_url: oauth2::RedirectUrl,
 }
 
@@ -27,8 +29,10 @@ async fn main() -> Result<(), anyhow::Error> {
     let Config {
         host_addr,
         database_url,
-        client_id,
-        client_secret,
+        facebook_client_id,
+        facebook_client_secret,
+        github_client_id,
+        github_client_secret,
         redirect_url,
     } = envy::from_env::<Config>()?;
 
@@ -54,7 +58,7 @@ async fn main() -> Result<(), anyhow::Error> {
         ));
 
     let backend =
-        crate::auth::github::Backend::new(pool.clone(), client_id, client_secret, redirect_url);
+        crate::auth::Backend::new(pool.clone(), facebook_client_id, facebook_client_secret, github_client_id, github_client_secret, redirect_url);
     let auth_layer = axum_login::AuthManagerLayerBuilder::new(backend, session_layer).build();
 
     let st = crate::http::State::from_pool(pool).unwrap();
@@ -62,7 +66,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let app = axum::Router::new()
         .route("/", axum::routing::get(crate::http::auth::index))
         .route_layer(axum_login::login_required!(
-            crate::auth::github::Backend,
+            crate::auth::Backend,
             login_url = "/login"
         ))
         .route("/login", axum::routing::get(crate::http::auth::login_page))

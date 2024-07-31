@@ -8,17 +8,9 @@ pub struct Credentials {
     pub new_state: oauth2::CsrfToken,
 }
 
-#[derive(Debug, serde::Deserialize)]
-struct FacebookUserInfo {
-    // legokichi
-    // name: String,
-    // fb unique id
-    id: i64,
-}
-
 #[derive(Debug, thiserror::Error)]
 #[error(transparent)]
-pub struct BackendError(#[from] anyhow::Error);
+pub struct BackendError(#[from] pub anyhow::Error);
 
 #[derive(Debug, Clone)]
 pub struct Backend {
@@ -81,7 +73,14 @@ impl axum_login::AuthnBackend for Backend {
             .await
             .map_err(anyhow::Error::from)?;
         // Use access token to request user info.
-        // https://docs.github.com/ja/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
+        // https://developers.facebook.com/docs/instagram-basic-display-api/reference/me?locale=ja_JP
+        #[derive(Debug, serde::Deserialize)]
+        struct FacebookUserInfo {
+            // legokichi
+            name: String,
+            // fb unique id
+            id: i64,
+        }
         let res = reqwest::Client::new()
             .get(format!(
                 "https://graph.instagram.com/v20.0/me?fields=id,name&access_token={}",
@@ -99,9 +98,12 @@ impl axum_login::AuthnBackend for Backend {
             serde_json::from_str::<FacebookUserInfo>(&user_info).map_err(anyhow::Error::from)?;
 
         // Persist user in our database so we can use `get_user`.
-        let user = crate::db::user::create_user(&self.db, None, Some(user_info.id))
-            .await
-            .map_err(anyhow::Error::from)?;
+        let user = crate::db::user::create_user(
+            &self.db,
+            crate::db::user::OAuthProvider::Facebook(user_info.id, user_info.name),
+        )
+        .await
+        .map_err(anyhow::Error::from)?;
 
         Ok(Some(user))
     }

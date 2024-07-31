@@ -7,8 +7,8 @@ pub struct UserQuery {
 #[derive(Clone, serde::Serialize, serde::Deserialize, sqlx::FromRow, Debug)]
 pub struct User {
     pub id: i64,
-    pub github_id: Option<i64>,
-    pub facebook_id: Option<i64>,
+    pub created_at: i64,
+    pub updated_at: i64,
 }
 
 impl axum_login::AuthUser for User {
@@ -19,6 +19,7 @@ impl axum_login::AuthUser for User {
     }
 
     fn session_auth_hash(&self) -> &[u8] {
+        // ヤケクソ
         unsafe {
             std::slice::from_raw_parts(
                 &self.id as *const i64 as *const u8,
