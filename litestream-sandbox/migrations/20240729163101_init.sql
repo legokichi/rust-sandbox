@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS users
 (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    github_id    INTEGER,
-    facebook_id  INTEGER
+    github_id    INTEGER UNIQUE,
+    facebook_id  INTEGER UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS points

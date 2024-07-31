@@ -24,7 +24,11 @@ pub async fn create_user(
 ) -> Result<crate::model::user::User, anyhow::Error> {
     let user = sqlx::query_as!(
         crate::model::user::User,
-        "INSERT INTO users (github_id, facebook_id) VALUES (?1, ?2) RETURNING *",
+        //"INSERT INTO users (github_id, facebook_id) VALUES (?1, ?2) RETURNING *",
+        r#"INSERT INTO users (github_id, facebook_id) VALUES (?1, ?2)
+        ON CONFLICT (github_id, facebook_id) DO NOTHING
+        RETURNING *
+        "#,
         github_id,
         facebook_id
     )
