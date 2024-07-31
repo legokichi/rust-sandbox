@@ -1,13 +1,18 @@
-mod point;
-pub use point::*;
+pub mod auth;
+// mod point;
+// mod oauth;
+// pub use auth::*;
+// pub use point::*;
 
-pub fn app() -> axum::Router<sqlx::sqlite::SqlitePool> {
-    axum::Router::new()
-        .route("/points", axum::routing::get(crate::http::list_points))
-        .route("/points", axum::routing::post(crate::http::create_point))
-        .route("/points/:point", axum::routing::get(crate::http::get_point))
-        .route("/points/:point", axum::routing::patch(crate::http::update_point))
-        .route("/points/:point", axum::routing::delete(crate::http::delete_point))
+#[derive(Clone)]
+pub struct State {
+    #[allow(dead_code)]
+    pub db: sqlx::sqlite::SqlitePool,
+}
+impl State {
+    pub fn from_pool(pool: sqlx::sqlite::SqlitePool) -> Result<Self, anyhow::Error> {
+        Ok(Self { db: pool })
+    }
 }
 
 pub struct Ise(anyhow::Error);

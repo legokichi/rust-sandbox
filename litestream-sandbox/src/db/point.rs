@@ -6,7 +6,7 @@ pub async fn list_points(
     let offset = query.offset.unwrap_or(0);
     let rows = sqlx::query_as!(
         crate::model::Point,
-        "SELECT * FROM points ORDER BY timestamp ASC LIMIT ?1 OFFSET ?2",
+        "SELECT * FROM points ORDER BY timestamp, id ASC LIMIT ?1 OFFSET ?2",
         limit,
         offset
     )

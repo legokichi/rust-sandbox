@@ -1,8 +1,9 @@
-mod point;
-pub use point::*;
+pub mod user;
+// mod point;
+// pub use point::*;
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, Clone, PartialEq, Eq, sqlx::FromRow)]
-pub struct List<T> {
-    pub offset: Option<u32>,
-    pub list: T,
-}
+// #[derive(serde::Deserialize, serde::Serialize, Debug, Clone, PartialEq, Eq, sqlx::FromRow)]
+// pub struct List<T> {
+//     pub offset: Option<u32>,
+//     pub list: T,
+// }
