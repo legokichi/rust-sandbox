@@ -1,17 +1,6 @@
 const AUTH_URL: &str = "https://www.facebook.com/v20.0/dialog/oauth";
 const TOKEN_URL: &str = "https://graph.facebook.com/v20.0/oauth/access_token";
 
-#[derive(Debug, Clone, serde::Deserialize)]
-pub struct Credentials {
-    pub code: String,
-    pub old_state: oauth2::CsrfToken,
-    pub new_state: oauth2::CsrfToken,
-}
-
-#[derive(Debug, thiserror::Error)]
-#[error(transparent)]
-pub struct BackendError(#[from] pub anyhow::Error);
-
 #[derive(Debug, Clone)]
 pub struct Backend {
     db: sqlx::SqlitePool,
@@ -21,16 +10,15 @@ pub struct Backend {
 impl Backend {
     pub fn new(
         db: sqlx::SqlitePool,
-        client_id: oauth2::ClientId,
-        client_secret: oauth2::ClientSecret,
+        client_token: super::ClientToken,
         redirect_url: oauth2::RedirectUrl,
     ) -> Self {
         let auth_url = oauth2::AuthUrl::new(AUTH_URL.to_string()).unwrap();
         let token_url = oauth2::TokenUrl::new(TOKEN_URL.to_string()).unwrap();
 
         let client = oauth2::basic::BasicClient::new(
-            client_id,
-            Some(client_secret),
+            client_token.client_id,
+            Some(client_token.client_secret),
             auth_url,
             Some(token_url),
         )
@@ -48,8 +36,8 @@ impl Backend {
 #[async_trait::async_trait]
 impl axum_login::AuthnBackend for Backend {
     type User = crate::model::user::User;
-    type Credentials = Credentials;
-    type Error = BackendError;
+    type Credentials = super::Credentials;
+    type Error = super::BackendError;
 
     async fn authenticate(
         &self,
@@ -68,6 +56,9 @@ impl axum_login::AuthnBackend for Backend {
             .request_async(|o| async {
                 let res = oauth2::reqwest::async_http_client(o).await;
                 log::debug!("{res:?}");
+                if let Ok(ref res) = res {
+                    log::debug!("{:?}", std::str::from_utf8(&res.body));
+                }
                 res
             })
             .await
@@ -78,12 +69,12 @@ impl axum_login::AuthnBackend for Backend {
         struct FacebookUserInfo {
             // legokichi
             name: String,
-            // fb unique id
-            id: i64,
+            // fb unique id as numeric string
+            id: String,
         }
         let res = reqwest::Client::new()
             .get(format!(
-                "https://graph.instagram.com/v20.0/me?fields=id,name&access_token={}",
+                "https://graph.facebook.com/v20.0/me?fields=id,name&access_token={}",
                 token_res.access_token().secret()
             ))
             .header(axum::http::header::USER_AGENT.as_str(), "axum-login")
@@ -94,18 +85,32 @@ impl axum_login::AuthnBackend for Backend {
             .text()
             .await
             .map_err(anyhow::Error::from)?;
+        log::debug!("{}", user_info);
         let user_info =
             serde_json::from_str::<FacebookUserInfo>(&user_info).map_err(anyhow::Error::from)?;
-
-        // Persist user in our database so we can use `get_user`.
-        let user = crate::db::user::create_user(
-            &self.db,
-            crate::db::user::OAuthProvider::Facebook(user_info.id, user_info.name),
-        )
-        .await
-        .map_err(anyhow::Error::from)?;
-
-        Ok(Some(user))
+        let facebook_id = user_info.id.parse::<i64>().map_err(anyhow::Error::from)?;
+        let mut db = self.db.acquire().await.unwrap();
+        if let Some(user) = creds.user {
+            crate::db::user::update_user(
+                &mut *db,
+                user.id,
+                Some(crate::db::user::OAuthProvider::Facebook(
+                    facebook_id,
+                    user_info.name,
+                )),
+            )
+            .await
+            .map_err(anyhow::Error::from)?;
+            Ok(Some(user))
+        } else {
+            let user = crate::db::user::create_user(
+                &mut *db,
+                crate::db::user::OAuthProvider::Facebook(facebook_id, user_info.name),
+            )
+            .await
+            .map_err(anyhow::Error::from)?;
+            Ok(Some(user))
+        }
     }
 
     async fn get_user(

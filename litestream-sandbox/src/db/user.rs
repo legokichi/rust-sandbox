@@ -1,144 +1,265 @@
-#[allow(dead_code)]
-pub async fn list_users(
-    pool: &sqlx::sqlite::SqlitePool,
-    query: &crate::model::user::UserQuery,
-) -> Result<(Vec<crate::model::user::User>, u32), anyhow::Error> {
-    let limit = query.limit.unwrap_or(20);
-    let offset = query.offset.unwrap_or(0);
-    let rows = sqlx::query_as!(
-        crate::model::user::User,
-        "SELECT * FROM users ORDER BY id, id ASC LIMIT ?1 OFFSET ?2",
-        limit,
-        offset
-    )
-    .fetch_all(pool)
-    .await?;
-    let next = offset + rows.len() as u32;
-    Ok((rows, next))
+// SEE: https://github.com/launchbadge/sqlx/issues/1635#issuecomment-1027791249
+#![allow(clippy::manual_async_fn)]
+
+use crate::api::get_user;
+
+pub fn list_users<'a, 'c>(
+    conn: impl sqlx::Acquire<'c, Database = sqlx::Sqlite> + Send + 'a,
+    offset: Option<u32>,
+    limit: Option<u32>,
+) -> impl std::future::Future<Output = Result<(Vec<crate::model::user::User>, u32), anyhow::Error>>
+       + Send
+       + 'a {
+    async move {
+        let mut conn = conn.acquire().await?;
+        let limit = limit.unwrap_or(20);
+        let offset = offset.unwrap_or(0);
+        let rows = sqlx::query_as!(
+            crate::model::user::User,
+            r#"
+        SELECT
+            users.id AS id,
+            github.github_id AS github_id,
+            facebook.facebook_id AS facebook_id,
+            users.created_at AS created_at,
+            users.updated_at AS updated_at
+        FROM users
+        LEFT OUTER JOIN github ON users.id = github.user_id
+        LEFT OUTER JOIN facebook ON users.id = facebook.user_id
+        ORDER BY id, id ASC
+        LIMIT ?1 OFFSET ?2
+        "#,
+            limit,
+            offset
+        )
+        .fetch_all(&mut *conn)
+        .await?;
+        let next_offset = offset + rows.len() as u32;
+        Ok((rows, next_offset))
+    }
 }
 
 pub enum OAuthProvider {
-    Facebook(i64, String),
     Github(i64, String),
+    Facebook(i64, String),
+    //Instagram(i64, String),
 }
 
-pub async fn create_user(
-    pool: &sqlx::sqlite::SqlitePool,
+pub fn create_user<'a, 'c>(
+    conn: impl sqlx::Acquire<'c, Database = sqlx::Sqlite> + Send + 'a,
     provider: OAuthProvider,
-) -> Result<crate::model::user::User, anyhow::Error> {
-    let mut tx = pool.begin().await?;
-    match provider {
-        OAuthProvider::Facebook(facebook_id, name) => {
-            let user = sqlx::query_as!(
-                crate::model::user::User,
-                "SELECT users.* FROM facebook INNER JOIN users ON users.id = user_id WHERE facebook_id = ?1",
-                facebook_id
-            )
-            .fetch_optional(&mut *tx)
-            .await?;
-            if let Some(user) = user {
-                return Ok(user);
+) -> impl std::future::Future<Output = Result<crate::model::user::User, anyhow::Error>> + Send + 'a
+{
+    async move {
+        use sqlx::Connection;
+        let mut conn = conn.acquire().await?;
+        let mut tx = conn.begin().await?;
+        match provider {
+            OAuthProvider::Github(github_id, login) => {
+                let user = sqlx::query_as!(
+                    crate::model::user::User,
+                    r#"
+                SELECT
+                    users.id AS id,
+                    github.github_id AS github_id,
+                    facebook.facebook_id AS facebook_id,
+                    users.created_at AS created_at,
+                    users.updated_at AS updated_at
+                FROM users
+                LEFT OUTER JOIN github ON users.id = github.user_id
+                LEFT OUTER JOIN facebook ON users.id = facebook.user_id
+                WHERE github.id = ?1
+                "#,
+                    github_id
+                )
+                .fetch_optional(&mut *tx)
+                .await?;
+                if let Some(user) = user {
+                    return Ok(user);
+                }
+                let user = sqlx::query!(
+                    r#"
+                INSERT INTO users DEFAULT VALUES
+                RETURNING id
+                "#
+                )
+                .fetch_one(&mut *tx)
+                .await?;
+                sqlx::query!(
+                    r#"
+                INSERT INTO github ( user_id, github_id, login )
+                VALUES ( ?1, ?2, ?3 )
+                "#,
+                    user.id,
+                    github_id,
+                    login
+                )
+                .execute(&mut *tx)
+                .await?;
+                let user = get_user(&mut tx, user.id).await?.unwrap();
+                tx.commit().await?;
+                Ok(user)
             }
-            let user = sqlx::query_as!(
-                crate::model::user::User,
-                r#"INSERT INTO users DEFAULT VALUES RETURNING *"#
-            )
-            .fetch_one(&mut *tx)
-            .await?;
-            sqlx::query!(
-                r#"INSERT INTO facebook ( user_id, facebook_id, name ) VALUES ( ?1, ?2, ?3 )"#,
-                user.id,
-                facebook_id,
-                name
-            )
-            .execute(&mut *tx)
-            .await?;
-            tx.commit().await?;
-            Ok(user)
-        }
-        OAuthProvider::Github(github_id, login) => {
-            let user = sqlx::query_as!(
-                crate::model::user::User,
-                "SELECT users.* FROM github INNER JOIN users ON users.id = user_id WHERE github_id = ?1",
-                github_id
-            )
-            .fetch_optional(&mut *tx)
-            .await?;
-            if let Some(user) = user {
-                return Ok(user);
-            }
-            let user = sqlx::query_as!(
-                crate::model::user::User,
-                r#"INSERT INTO users DEFAULT VALUES RETURNING *"#
-            )
-            .fetch_one(&mut *tx)
-            .await?;
-            sqlx::query!(
-                r#"INSERT INTO github ( user_id, github_id, login ) VALUES ( ?1, ?2, ?3 )"#,
-                user.id,
-                github_id,
-                login
-            )
-            .execute(&mut *tx)
-            .await?;
-            tx.commit().await?;
-            Ok(user)
+            OAuthProvider::Facebook(facebook_id, name) => {
+                let user = sqlx::query_as!(
+                    crate::model::user::User,
+                    r#"
+                SELECT
+                    users.id AS id,
+                    github.github_id AS github_id,
+                    facebook.facebook_id AS facebook_id,
+                    users.created_at AS created_at,
+                    users.updated_at AS updated_at
+                FROM users
+                LEFT OUTER JOIN github ON users.id = github.user_id
+                LEFT OUTER JOIN facebook ON users.id = facebook.user_id
+                WHERE facebook.id = ?1
+                "#,
+                    facebook_id
+                )
+                .fetch_optional(&mut *tx)
+                .await?;
+                if let Some(user) = user {
+                    return Ok(user);
+                }
+                let user = sqlx::query!(
+                    r#"
+                INSERT INTO users DEFAULT VALUES
+                RETURNING id
+                "#
+                )
+                .fetch_one(&mut *tx)
+                .await?;
+                sqlx::query!(
+                    r#"
+                INSERT INTO facebook ( user_id, facebook_id, name )
+                VALUES ( ?1, ?2, ?3 )
+                "#,
+                    user.id,
+                    facebook_id,
+                    name
+                )
+                .execute(&mut *tx)
+                .await?;
+                let user = get_user(&mut tx, user.id).await?.unwrap();
+                tx.commit().await?;
+                Ok(user)
+            } //OAuthProvider::Instagram(_instagram_id, _name) => {
+              //    todo!()
+              //}
         }
     }
 }
 
 // 多重ログイン
-#[allow(dead_code)]
-pub async fn update_user(
-    pool: &sqlx::sqlite::SqlitePool,
+pub fn update_user<'a, 'c>(
+    conn: impl sqlx::Acquire<'c, Database = sqlx::Sqlite> + Send + 'a,
     user_id: i64,
-    provider: OAuthProvider,
-) -> Result<(), anyhow::Error> {
-    let mut tx = pool.begin().await?;
-    match provider {
-        OAuthProvider::Facebook(facebook_id, name) => {
-            sqlx::query!(
-                "INSERT INTO facebook ( user_id, facebook_id, name ) VALUES ( ?1, ?2, ?3 ) ON CONFLICT ( user_id ) DO UPDATE SET facebook_id = ?2, name = ?3, updated_at = strftime('%s', 'now')",
-                user_id,
-                facebook_id,
-                name
-            )
-            .execute(&mut *tx)
-            .await?;
-            Ok(())
+    provider: Option<OAuthProvider>,
+) -> impl std::future::Future<Output = Result<crate::model::user::User, anyhow::Error>> + Send + 'a
+{
+    async move {
+        use sqlx::Connection;
+        let mut conn = conn.acquire().await?;
+        let mut tx = conn.begin().await?;
+        if let Some(provider) = provider {
+            match provider {
+                OAuthProvider::Github(github_id, login) => {
+                    sqlx::query!(
+                        r#"
+                    INSERT INTO github ( user_id, github_id, login )
+                    VALUES ( ?1, ?2, ?3 )
+                    ON CONFLICT ( user_id )
+                    DO UPDATE SET github_id = ?2, login = ?3, updated_at = strftime('%s', 'now')
+                    "#,
+                        user_id,
+                        github_id,
+                        login
+                    )
+                    .execute(&mut *tx)
+                    .await?;
+                }
+                OAuthProvider::Facebook(facebook_id, name) => {
+                    sqlx::query!(
+                        r#"
+                    INSERT INTO facebook ( user_id, facebook_id, name )
+                    VALUES ( ?1, ?2, ?3 )
+                    ON CONFLICT ( user_id )
+                    DO UPDATE SET facebook_id = ?2, name = ?3, updated_at = strftime('%s', 'now')
+                    "#,
+                        user_id,
+                        facebook_id,
+                        name
+                    )
+                    .execute(&mut *tx)
+                    .await?;
+                } //OAuthProvider::Instagram(instagram_id, name) => {
+                  //    sqlx::query!(
+                  //        r#"
+                  //    INSERT INTO instagram ( user_id, instagram_id, name )
+                  //    VALUES ( ?1, ?2, ?3 )
+                  //    ON CONFLICT ( user_id )
+                  //    DO UPDATE SET instagram_id = ?2, name = ?3, updated_at = strftime('%s', 'now')
+                  //    "#,
+                  //        user_id,
+                  //        instagram_id,
+                  //        name
+                  //    )
+                  //    .execute(&mut *tx)
+                  //    .await?;
+                  //}
+            }
         }
-        OAuthProvider::Github(github_id, login) => {
-            sqlx::query!(
-                "INSERT INTO github ( user_id, github_id, login ) VALUES ( ?1, ?2, ?3 ) ON CONFLICT ( user_id ) DO UPDATE SET github_id = ?2, login = ?3, updated_at = strftime('%s', 'now')",
-                user_id,
-                github_id,
-                login
-            )
-            .execute(&mut *tx)
-            .await?;
-            Ok(())
-        }
+        let user = get_user(&mut tx, user_id).await?.unwrap();
+        Ok(user)
     }
 }
 
-pub async fn get_user(
-    pool: &sqlx::sqlite::SqlitePool,
+pub fn get_user<'a, 'c>(
+    conn: impl sqlx::Acquire<'c, Database = sqlx::Sqlite> + Send + 'a,
     id: i64,
-) -> Result<Option<crate::model::user::User>, anyhow::Error> {
-    let row = sqlx::query_as!(
-        crate::model::user::User,
-        "SELECT * FROM users WHERE id = ?1",
-        id
-    )
-    .fetch_optional(pool)
-    .await?;
-    Ok(row)
+) -> impl std::future::Future<Output = Result<Option<crate::model::user::User>, anyhow::Error>> + Send + 'a
+{
+    async move {
+        let mut conn = conn.acquire().await?;
+        let row = sqlx::query_as!(
+            crate::model::user::User,
+            r#"
+        SELECT 
+            users.id AS id,
+            github.github_id AS github_id,
+            facebook.facebook_id AS facebook_id,
+            users.created_at AS created_at,
+            users.updated_at AS updated_at
+        FROM users 
+        LEFT OUTER JOIN github ON users.id = github.user_id
+        LEFT OUTER JOIN facebook ON users.id = facebook.user_id
+        WHERE users.id = ?1
+        "#,
+            id
+        )
+        .fetch_optional(&mut *conn)
+        .await?;
+        Ok(row)
+    }
 }
 
-#[allow(dead_code)]
-pub async fn delete_user(pool: &sqlx::sqlite::SqlitePool, id: &i64) -> Result<(), anyhow::Error> {
-    sqlx::query!("DELETE FROM users WHERE id = ?1", id)
-        .execute(pool)
+pub fn delete_user<'a, 'c>(
+    conn: impl sqlx::Acquire<'c, Database = sqlx::Sqlite> + Send + 'a,
+    id: i64,
+) -> impl std::future::Future<Output = Result<(), anyhow::Error>> + Send + 'a {
+    async move {
+        let mut conn = conn.acquire().await?;
+        sqlx::query!(
+            r#"
+        DELETE
+        FROM users
+        WHERE id = ?1
+        "#,
+            id
+        )
+        .execute(&mut *conn)
         .await?;
-    Ok(())
+        Ok(())
+    }
 }

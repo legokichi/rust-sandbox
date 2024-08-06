@@ -1,6 +1,11 @@
-mod facebook;
-mod github;
-mod instagram;
+pub mod facebook;
+pub mod github;
+//pub mod instagram;
+
+pub struct ClientToken {
+    pub client_id: oauth2::ClientId,
+    pub client_secret: oauth2::ClientSecret,
+}
 
 #[derive(Debug, Clone)]
 pub struct Credentials {
@@ -8,12 +13,34 @@ pub struct Credentials {
     pub old_state: oauth2::CsrfToken,
     pub new_state: oauth2::CsrfToken,
     pub provider: OAuthProvider,
+    pub user: Option<crate::model::user::User>,
 }
 
 #[derive(Debug, Clone)]
 pub enum OAuthProvider {
-    Facebook,
     Github,
+    Facebook,
+    //Instagram,
+}
+impl std::str::FromStr for OAuthProvider {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "github" => Ok(Self::Github),
+            "facebook" => Ok(Self::Facebook),
+            //"instagram" => Ok(Self::Instagram),
+            _ => Err(anyhow::anyhow!("invalid OAuth provider: {}", s)),
+        }
+    }
+}
+impl std::fmt::Display for OAuthProvider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Github => write!(f, "github"),
+            Self::Facebook => write!(f, "facebook"),
+            //Self::Instagram => write!(f, "instagram"),
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -22,39 +49,39 @@ pub struct BackendError(#[from] pub anyhow::Error);
 
 #[derive(Debug, Clone)]
 pub struct Backend {
-    facebook: crate::auth::facebook::Backend,
     github: crate::auth::github::Backend,
+    facebook: crate::auth::facebook::Backend,
+    //instagram: crate::auth::instagram::Backend,
 }
 
 impl Backend {
     pub fn new(
         db: sqlx::SqlitePool,
-        facebook_client_id: oauth2::ClientId,
-        facebook_client_secret: oauth2::ClientSecret,
-        github_client_id: oauth2::ClientId,
-        github_client_secret: oauth2::ClientSecret,
+        github: crate::auth::ClientToken,
+        facebook: crate::auth::ClientToken,
+        //instagram: crate::auth::instagram::ClientToken,
         redirect_url: oauth2::RedirectUrl,
     ) -> Self {
         Self {
+            github: crate::auth::github::Backend::new(db.clone(), github, redirect_url.clone()),
             facebook: crate::auth::facebook::Backend::new(
                 db.clone(),
-                facebook_client_id,
-                facebook_client_secret,
+                facebook,
                 redirect_url.clone(),
             ),
-            github: crate::auth::github::Backend::new(
-                db.clone(),
-                github_client_id,
-                github_client_secret,
-                redirect_url,
-            ),
+            //  instagram: crate::auth::instagram::Backend::new(
+            //      db.clone(),
+            //      instagram,
+            //      redirect_url.clone(),
+            //  ),
         }
     }
 
     pub fn authorize_url(&self, provider: OAuthProvider) -> (oauth2::url::Url, oauth2::CsrfToken) {
         match provider {
-            OAuthProvider::Facebook => self.facebook.authorize_url(),
             OAuthProvider::Github => self.github.authorize_url(),
+            OAuthProvider::Facebook => self.facebook.authorize_url(),
+            //OAuthProvider::Instagram => self.instagram.authorize_url(),
         }
     }
 }
@@ -70,16 +97,17 @@ impl axum_login::AuthnBackend for Backend {
         creds: Self::Credentials,
     ) -> Result<Option<Self::User>, Self::Error> {
         match creds.provider {
-            OAuthProvider::Facebook => self.facebook.authenticate(crate::auth::facebook::Credentials{
-                code: creds.code,
-                old_state: creds.old_state,
-                new_state: creds.new_state,
-            }).await.map_err(|o| o.0.into()),
-            OAuthProvider::Github => self.github.authenticate(crate::auth::github::Credentials{
-                code: creds.code,
-                old_state: creds.old_state,
-                new_state: creds.new_state,
-            }).await.map_err(|o| o.0.into()),
+            OAuthProvider::Github => self.github.authenticate(creds).await,
+            OAuthProvider::Facebook => self.facebook.authenticate(creds).await,
+            //OAuthProvider::Instagram => self
+            //    .instagram
+            //    .authenticate(crate::auth::instagram::Credentials {
+            //        code: creds.code,
+            //        old_state: creds.old_state,
+            //        new_state: creds.new_state,
+            //    })
+            //    .await
+            //    .map_err(|o| o.0.into()),
         }
     }
 
@@ -87,7 +115,7 @@ impl axum_login::AuthnBackend for Backend {
         &self,
         user_id: &axum_login::UserId<Self>,
     ) -> Result<Option<Self::User>, Self::Error> {
-        let user = self.facebook.get_user(user_id).await.map_err(|o| o.0)?;
+        let user = self.github.get_user(user_id).await?;
         Ok(user)
     }
 }

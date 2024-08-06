@@ -1,3 +1,2 @@
-// mod point;
-// pub use point::*;
+// pub mod point;
 pub mod user;

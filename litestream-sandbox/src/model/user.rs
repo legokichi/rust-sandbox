@@ -1,12 +1,8 @@
-#[derive(serde::Deserialize, serde::Serialize, Debug, Clone, PartialEq, Eq, sqlx::FromRow)]
-pub struct UserQuery {
-    pub offset: Option<u32>,
-    pub limit: Option<u32>,
-}
-
-#[derive(Clone, serde::Serialize, serde::Deserialize, sqlx::FromRow, Debug)]
+#[derive(Clone, serde::Serialize, serde::Deserialize, sqlx::FromRow, Debug, PartialEq, Eq)]
 pub struct User {
     pub id: i64,
+    pub github_id: Option<i64>,
+    pub facebook_id: Option<i64>,
     pub created_at: i64,
     pub updated_at: i64,
 }

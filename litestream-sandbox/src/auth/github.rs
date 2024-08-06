@@ -1,17 +1,6 @@
 const AUTH_URL: &str = "https://github.com/login/oauth/authorize";
 const TOKEN_URL: &str = "https://github.com/login/oauth/access_token";
 
-#[derive(Debug, Clone, serde::Deserialize)]
-pub struct Credentials {
-    pub code: String,
-    pub old_state: oauth2::CsrfToken,
-    pub new_state: oauth2::CsrfToken,
-}
-
-#[derive(Debug, thiserror::Error)]
-#[error(transparent)]
-pub struct BackendError(#[from] pub anyhow::Error);
-
 #[derive(Debug, Clone)]
 pub struct Backend {
     db: sqlx::SqlitePool,
@@ -21,16 +10,15 @@ pub struct Backend {
 impl Backend {
     pub fn new(
         db: sqlx::SqlitePool,
-        client_id: oauth2::ClientId,
-        client_secret: oauth2::ClientSecret,
+        client_token: super::ClientToken,
         redirect_url: oauth2::RedirectUrl,
     ) -> Self {
         let auth_url = oauth2::AuthUrl::new(AUTH_URL.to_string()).unwrap();
         let token_url = oauth2::TokenUrl::new(TOKEN_URL.to_string()).unwrap();
 
         let client = oauth2::basic::BasicClient::new(
-            client_id,
-            Some(client_secret),
+            client_token.client_id,
+            Some(client_token.client_secret),
             auth_url,
             Some(token_url),
         )
@@ -48,8 +36,8 @@ impl Backend {
 #[async_trait::async_trait]
 impl axum_login::AuthnBackend for Backend {
     type User = crate::model::user::User;
-    type Credentials = Credentials;
-    type Error = BackendError;
+    type Credentials = super::Credentials;
+    type Error = super::BackendError;
 
     async fn authenticate(
         &self,
@@ -68,17 +56,18 @@ impl axum_login::AuthnBackend for Backend {
             .request_async(|o| async {
                 let res = oauth2::reqwest::async_http_client(o).await;
                 log::debug!("{res:?}");
+                if let Ok(ref res) = res {
+                    log::debug!("{:?}", std::str::from_utf8(&res.body));
+                }
                 res
             })
             .await
             .map_err(anyhow::Error::from)?;
-        // Use access token to request user info.
-        // https://docs.github.com/ja/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
 
+        // https://docs.github.com/ja/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
         #[derive(Debug, serde::Deserialize)]
         struct GithubUserInfo {
             // legokichi
-            #[allow(dead_code)]
             login: String,
             // github unique id
             id: i64,
@@ -86,11 +75,11 @@ impl axum_login::AuthnBackend for Backend {
 
         let res = reqwest::Client::new()
             .get("https://api.github.com/user")
-            .header(axum::http::header::USER_AGENT.as_str(), "axum-login")
             .header(
                 axum::http::header::AUTHORIZATION.as_str(),
                 format!("Bearer {}", token_res.access_token().secret()),
             )
+            .header(axum::http::header::USER_AGENT.as_str(), "axum-login")
             .send()
             .await;
         let user_info = res
@@ -98,27 +87,39 @@ impl axum_login::AuthnBackend for Backend {
             .text()
             .await
             .map_err(anyhow::Error::from)?;
+        log::debug!("{}", user_info);
         let user_info =
             serde_json::from_str::<GithubUserInfo>(&user_info).map_err(anyhow::Error::from)?;
 
-        // Persist user in our database so we can use `get_user`.
-        let user = crate::db::user::create_user(
-            &self.db,
-            crate::db::user::OAuthProvider::Github(user_info.id, user_info.login),
-        )
-        .await
-        .map_err(anyhow::Error::from)?;
-
-        Ok(Some(user))
+        let mut db = self.db.acquire().await.map_err(anyhow::Error::from)?;
+        if let Some(user) = creds.user {
+            crate::db::user::update_user(
+                &mut *db,
+                user.id,
+                Some(crate::db::user::OAuthProvider::Github(
+                    user_info.id,
+                    user_info.login,
+                )),
+            )
+            .await
+            .map_err(|o| dbg!(o))?;
+            Ok(Some(user))
+        } else {
+            let user = crate::db::user::create_user(
+                &mut *db,
+                crate::db::user::OAuthProvider::Github(user_info.id, user_info.login),
+            )
+            .await
+            .map_err(|o| dbg!(o))?;
+            Ok(Some(user))
+        }
     }
 
     async fn get_user(
         &self,
         user_id: &axum_login::UserId<Self>,
     ) -> Result<Option<Self::User>, Self::Error> {
-        let user = crate::db::user::get_user(&self.db, *user_id)
-            .await
-            .map_err(anyhow::Error::from)?;
+        let user = crate::db::user::get_user(&self.db, *user_id).await?;
         Ok(user)
     }
 }

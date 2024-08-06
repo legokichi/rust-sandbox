@@ -1,11 +1,11 @@
 pub async fn list_points(
     pool: &sqlx::sqlite::SqlitePool,
-    query: &crate::model::PointsQuery,
-) -> Result<(Vec<crate::model::Point>, u32), anyhow::Error> {
+    query: &crate::model::point::PointsQuery,
+) -> Result<(Vec<crate::model::point::Point>, u32), anyhow::Error> {
     let limit = query.limit.unwrap_or(20);
     let offset = query.offset.unwrap_or(0);
     let rows = sqlx::query_as!(
-        crate::model::Point,
+        crate::model::point::Point,
         "SELECT * FROM points ORDER BY timestamp, id ASC LIMIT ?1 OFFSET ?2",
         limit,
         offset
@@ -18,7 +18,7 @@ pub async fn list_points(
 
 pub async fn create_point(
     pool: &sqlx::sqlite::SqlitePool,
-    point: &crate::model::Point,
+    point: &crate::model::point::Point,
 ) -> Result<(), anyhow::Error> {
     sqlx::query!(
         "INSERT INTO points ( id, timestamp, text ) VALUES ( ?1, ?2, ?3 )",
@@ -33,10 +33,10 @@ pub async fn create_point(
 
 pub async fn get_point(
     pool: &sqlx::sqlite::SqlitePool,
-    id: &str,
-) -> Result<Option<crate::model::Point>, anyhow::Error> {
+    id: i64,
+) -> Result<Option<crate::model::point::Point>, anyhow::Error> {
     let row = sqlx::query_as!(
-        crate::model::Point,
+        crate::model::point::Point,
         "SELECT * FROM points WHERE id = ?1",
         id
     )
@@ -48,7 +48,7 @@ pub async fn get_point(
 pub async fn update_point(
     pool: &sqlx::sqlite::SqlitePool,
     id: &str,
-    point: &crate::model::UpdatePoint,
+    point: &crate::model::point::UpdatePoint,
 ) -> Result<(), anyhow::Error> {
     let mut tx = pool.begin().await?;
     if let Some(text) = &point.text {
@@ -75,7 +75,7 @@ mod tests {
     async fn test(pool: sqlx::sqlite::SqlitePool) {
         dotenvy::dotenv().ok();
         env_logger::builder().is_test(true).try_init().ok();
-        let point1 = crate::model::Point {
+        let point1 = crate::model::point::Point {
             id: uuid::Uuid::new_v4().to_string(),
             timestamp: chrono::Utc::now().to_rfc3339(),
             text: "test".to_string(),
@@ -84,7 +84,7 @@ mod tests {
         {
             let (rows, next) = list_points(
                 &pool,
-                &crate::model::PointsQuery {
+                &crate::model::point::PointsQuery {
                     offset: Some(0),
                     limit: Some(1),
                 },
@@ -98,7 +98,7 @@ mod tests {
             let row = get_point(&pool, &point1.id).await.unwrap();
             assert_eq!(row, Some(point1.clone()));
         }
-        let point2 = crate::model::Point {
+        let point2 = crate::model::point::Point {
             id: uuid::Uuid::new_v4().to_string(),
             timestamp: chrono::Utc::now().to_rfc3339(),
             text: "test".to_string(),
@@ -107,7 +107,7 @@ mod tests {
         {
             let (rows, next) = list_points(
                 &pool,
-                &crate::model::PointsQuery {
+                &crate::model::point::PointsQuery {
                     offset: Some(0),
                     limit: Some(1),
                 },
@@ -119,7 +119,7 @@ mod tests {
             assert_eq!(rows.first().unwrap(), &point1);
             let (rows, next) = list_points(
                 &pool,
-                &crate::model::PointsQuery {
+                &crate::model::point::PointsQuery {
                     offset: Some(1),
                     limit: Some(1),
                 },

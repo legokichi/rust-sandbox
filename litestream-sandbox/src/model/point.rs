@@ -7,9 +7,8 @@ pub struct PointsQuery {
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone, PartialEq, Eq, sqlx::FromRow)]
 pub struct Point {
     // uuid
-    pub id: String,
-    // iso8601 utc
-    pub timestamp: String,
+    pub id: i64,
+    pub timestamp: i64,
     pub text: String,
 }
 

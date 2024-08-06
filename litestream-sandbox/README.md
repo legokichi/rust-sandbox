@@ -15,3 +15,16 @@ $ sqlite3 hoge.db
 - https://developers.facebook.com/docs/instagram-basic-display-api/reference/me?locale=ja_JP
 - https://apidog.com/jp/blog/facebook-oauth-2-auth-process/
 - https://developers.facebook.com/docs/instagram-basic-display-api/reference/user?locale=ja_JP
+- https://blog.jnito.com/entry/2023/05/23/104124
+- https://zenn.dev/hkdord/articles/axum-request-id
+- https://www.sqlite.org/pragma.html#pragma_auto_vacuum
+- https://cloud.google.com/run/docs/configuring/secrets?hl=ja
+- https://litestream.io/guides/gcs/
+
+
+## accounts
+
+- https://litestream-sandbox-4h2uh5x4wa-an.a.run.app
+- https://developers.facebook.com/apps/461498540066147/dashboard/
+- https://github.com/settings/applications/2657880
+- https://dash.cloudflare.com/688933c4553b4284a2684583893badc9/domains/duxca.com

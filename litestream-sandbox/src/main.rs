@@ -1,16 +1,21 @@
+use std::str::FromStr;
+
+mod api;
 mod auth;
 mod db;
-mod http;
 mod model;
+mod web;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug)]
 struct Config {
     host_addr: String,
     database_url: String,
-    facebook_client_id: oauth2::ClientId,
-    facebook_client_secret: oauth2::ClientSecret,
     github_client_id: oauth2::ClientId,
     github_client_secret: oauth2::ClientSecret,
+    facebook_client_id: oauth2::ClientId,
+    facebook_client_secret: oauth2::ClientSecret,
+    //instagram_client_id: oauth2::ClientId,
+    //instagram_client_secret: oauth2::ClientSecret,
     redirect_url: oauth2::RedirectUrl,
 }
 
@@ -18,25 +23,34 @@ struct Config {
 async fn main() -> Result<(), anyhow::Error> {
     dotenvy::dotenv().ok();
     env_logger::init();
-    // use tracing_subscriber::layer::SubscriberExt;
-    // use tracing_subscriber::util::SubscriberInitExt;
-    // tracing_subscriber::registry()
-    //     .with(tracing_subscriber::EnvFilter::new(std::env::var("RUST_LOG").unwrap_or_else(
-    //         |_| "axum_login=debug,tower_sessions=debug,sqlx=warn,tower_http=debug,oauth2=trace".into(),
-    //     )))
-    //     .with(tracing_subscriber::fmt::layer())
-    //     .try_init()?;
+    /*
+        tracing_log::LogTracer::init()?;
+        use tracing_subscriber::layer::SubscriberExt;
+        use tracing_subscriber::util::SubscriberInitExt;
+        tracing_subscriber::registry()
+            // .with(tracing_subscriber::EnvFilter::new(
+            //     std::env::var("RUST_LOG").unwrap_or_else(|_| {
+            //         ""
+            //             .into()
+            //     }),
+            // ))
+            .with(tracing_subscriber::fmt::layer())
+            .try_init()?;
+    */
     let Config {
         host_addr,
         database_url,
-        facebook_client_id,
-        facebook_client_secret,
         github_client_id,
         github_client_secret,
+        facebook_client_id,
+        facebook_client_secret,
+        //instagram_client_id,
+        //instagram_client_secret,
         redirect_url,
-    } = envy::from_env::<Config>()?;
+    } = dbg!(envy::from_env::<Config>()?);
 
-    let pool = sqlx::sqlite::SqlitePool::connect(&database_url).await?;
+    let opt = sqlx::sqlite::SqliteConnectOptions::from_str(&database_url)?.foreign_keys(true);
+    let pool = sqlx::sqlite::SqlitePool::connect_with(opt).await?;
 
     sqlx::migrate!().run(&pool).await?;
 
@@ -47,7 +61,7 @@ async fn main() -> Result<(), anyhow::Error> {
         use tower_sessions::ExpiredDeletion;
         session_store
             .clone()
-            .continuously_delete_expired(tokio::time::Duration::from_secs(60))
+            .continuously_delete_expired(tokio::time::Duration::from_secs(3600))
     });
 
     let session_layer = tower_sessions::SessionManagerLayer::new(session_store)
@@ -57,26 +71,45 @@ async fn main() -> Result<(), anyhow::Error> {
             std::time::Duration::from_secs(600).try_into().unwrap(),
         ));
 
-    let backend =
-        crate::auth::Backend::new(pool.clone(), facebook_client_id, facebook_client_secret, github_client_id, github_client_secret, redirect_url);
-    let auth_layer = axum_login::AuthManagerLayerBuilder::new(backend, session_layer).build();
-
-    let st = crate::http::State::from_pool(pool).unwrap();
+    let backend = crate::auth::Backend::new(
+        pool.clone(),
+        crate::auth::ClientToken {
+            client_id: github_client_id.clone(),
+            client_secret: github_client_secret.clone(),
+        },
+        crate::auth::ClientToken {
+            client_id: facebook_client_id.clone(),
+            client_secret: facebook_client_secret.clone(),
+        },
+        // crate::auth::instagram::ClientToken {
+        //     client_id: instagram_client_id.clone(),
+        //     client_secret: instagram_client_secret.clone(),
+        // },
+        redirect_url,
+    );
+    let st = crate::web::State::from_pool(pool).unwrap();
 
     let app = axum::Router::new()
-        .route("/", axum::routing::get(crate::http::auth::index))
-        .route_layer(axum_login::login_required!(
-            crate::auth::Backend,
-            login_url = "/login"
-        ))
-        .route("/login", axum::routing::get(crate::http::auth::login_page))
-        .route("/login", axum::routing::post(crate::http::auth::login))
-        .route("/logout", axum::routing::get(crate::http::auth::logout))
+        // .route_layer(axum_login::login_required!(
+        //     crate::auth::Backend,
+        //     login_url = "/login"
+        // ))
+        .route("/", axum::routing::get(crate::web::index::index))
+        .route("/login", axum::routing::post(crate::web::login::login))
+        .route("/logout", axum::routing::get(crate::web::login::logout))
         .route(
             "/oauth/callback",
-            axum::routing::get(crate::http::auth::callback),
+            axum::routing::get(crate::web::login::callback),
         )
-        .layer(auth_layer)
+        .route("/api", axum::routing::post(crate::web::api::api))
+        .layer(axum_login::AuthManagerLayerBuilder::new(backend, session_layer).build())
+        .layer(
+            tower_http::cors::CorsLayer::new()
+                .allow_methods(tower_http::cors::Any)
+                .allow_origin(tower_http::cors::Any),
+        )
+        .layer(tower_http::trace::TraceLayer::new_for_http())
+        .layer(tower_http::compression::CompressionLayer::new())
         .with_state(st);
 
     let listener = tokio::net::TcpListener::bind(host_addr).await?;

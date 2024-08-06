@@ -1,0 +1,6 @@
+dbs:
+  - path: ./hoge.db
+    replicas:
+      - type: gcs
+        bucket: duxca-litestream-sandbox
+        path: hoge.db

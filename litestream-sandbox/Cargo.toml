@@ -2,36 +2,47 @@
 edition = "2021"
 name = "litestream-sandbox"
 version = "0.1.0"
+resolver = "2"
+
+[profile.release]
+debug = 1
+
 
 [dependencies]
 anyhow = "1"
+askama = {version = "0.12.1", features = ["with-axum"]}
+askama_axum = "0.4.0"
 async-trait = "0.1"
 axum = "0.7"
 axum-extra = {version = "0.9", features = ["cookie"]}
 axum-login = "0.15"
 chrono = {version = "0.4", features = ["serde"]}
 dotenvy = "0.15"
-env_logger = "0.11"
-envy = "0.4"
-futures = "0.3"
-log = "0.4"
+env_logger = "0.11.5"
+envy = "0.4.2"
+futures = "0.3.30"
+log = "0.4.22"
+oauth2 = "4.1"
+reqwest = {version = "0.12", default-features = false, features = ["rustls-tls", "json"]}
 serde = {version = "1", features = ["derive"]}
 serde_json = "1"
 sqlx = {version = "0.8", features = ["runtime-tokio", "sqlite", "chrono", "json", "uuid", "migrate"]}
-tokio = {version = "1", features = ["full"]}
-# tokio-stream = {version = "0.1", features = ["full"]}
-# tower-http = {version = "0.5.0", features = ["trace"]}
-tracing = "0.1"
-tracing-subscriber = {version = "0.3", features = ["env-filter"]}
-oauth2 = "4.1"
-reqwest = {version = "0.12", default-features = false, features = ["rustls-tls", "json"]}
-tower-sessions = {version="0.12.2", features = ["signed"]}
-tower-sessions-sqlx-store = {version = "0.13", features = ["sqlite"]}
-uuid = {version = "1", features = ["serde", "v4"]}
 thiserror = "1"
+tokio = {version = "1", features = ["full"]}
+tokio-stream = {version = "0.1", features = ["full"]}
+tower-http = {version = "0.5.0", features = ["trace", "compression-zstd", "cors"]}
+tower-sessions = {version = "0.12.2", features = ["signed"]}
+tower-sessions-sqlx-store = {version = "0.13", features = ["sqlite"]}
+tracing = "0.1"
+tracing-log = "0.2"
+tracing-subscriber = {version = "0.3", features = ["env-filter"]}
+uuid = {version = "1", features = ["serde", "v4"]}
 
 [dev-dependencies]
 http-body-util = "0.1.0"
 hyper = {version = "1.0.0", features = ["full"]}
 hyper-util = {version = "0.1", features = ["client", "http1", "client-legacy"]}
 tower = {version = "0.4", features = ["util"]}
+
+
+

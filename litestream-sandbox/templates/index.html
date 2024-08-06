@@ -1,0 +1,50 @@
+<html>
+{% if let Some(user) = user %}
+
+<head>
+    <title>Welcome</title>
+</head>
+
+<body>
+    {% if let Some(github_id) = user.github_id %}
+    <p>
+        {{ github_id }}
+    </p>
+    {% else %}
+    <form method="post" action="/login">
+        <input type="submit" value="GitHub Login" />
+        <input type="hidden" name="provider" value="github" />
+    </form>
+    {% endif %}
+    {% if let Some(facebook_id) = user.facebook_id %}
+    <p>
+        {{ facebook_id }}
+    </p>
+    {% else %}
+    <form method="post" action="/login">
+        <input type="submit" value="Facebook Login" />
+        <input type="hidden" name="provider" value="facebook" />
+    </form>
+    {% endif %}
+</body>
+
+{% else %}
+
+<head>
+    <title>OAuth2 Login</title>
+</head>
+
+<body>
+    <form method="post" action="/login">
+        <input type="submit" value="GitHub Login" />
+        <input type="hidden" name="provider" value="github" />
+    </form>
+    <form method="post" action="/login">
+        <input type="submit" value="Facebook Login" />
+        <input type="hidden" name="provider" value="facebook" />
+    </form>
+</body>
+
+{% endif %}
+
+</html>
