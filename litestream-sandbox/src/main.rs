@@ -23,7 +23,6 @@ struct Config {
 async fn main() -> Result<(), anyhow::Error> {
     dotenvy::dotenv().ok();
     //env_logger::init();
-    tracing_log::LogTracer::init()?;
     tracing_subscriber::fmt()
         .with_timer(tracing_subscriber::fmt::time::LocalTime::rfc_3339())
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())

@@ -45,7 +45,7 @@ INSERT INTO roles (name) VALUES ('admin');
 INSERT INTO users (role_id) VALUES (2); -- admin user
 INSERT INTO github (id, user_id, login) VALUES (2429307, 1, 'legokichi');
 
-CREATE TABLE access_log (
+CREATE TABLE access_logs (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     request TEXT NOT NULL,

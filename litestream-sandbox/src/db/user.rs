@@ -330,8 +330,35 @@ pub fn check_permission<'a, 'c>(
         if row.role_name == "admin" {
             return Ok(true);
         }
-        match req {
-            crate::model::api::Request::ListUser(..) => Ok(true),
+        if row.role_name == "default" {
+            let flag = match req {
+                crate::model::api::Request::ListUser(..) => false,
+            };
+            return Ok(flag);
         }
+        Ok(false)
+    }
+}
+
+#[tracing::instrument(level = "trace", skip(conn))]
+pub fn add_access_log<'a, 'c>(
+    conn: impl sqlx::Acquire<'c, Database = sqlx::Sqlite> + Send + 'a,
+    user_id: i64,
+    req: &'a crate::model::api::Request,
+) -> impl std::future::Future<Output = Result<(), anyhow::Error>> + Send + 'a {
+    async move {
+        let mut conn = conn.acquire().await?;
+        let request = serde_json::to_string(req)?;
+        sqlx::query!(
+            r#"
+            INSERT INTO access_logs ( user_id, request )
+            VALUES ( ?1, ?2 )
+            "#,
+            user_id,
+            request
+        )
+        .execute(&mut *conn)
+        .await?;
+        Ok(())
     }
 }
