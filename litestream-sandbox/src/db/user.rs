@@ -333,6 +333,7 @@ pub fn check_permission<'a, 'c>(
         if row.role_name == "default" {
             let flag = match req {
                 crate::model::api::Request::ListUser(..) => false,
+                crate::model::api::Request::ListAccessLogs(..) => false,
             };
             return Ok(flag);
         }
@@ -360,5 +361,65 @@ pub fn add_access_log<'a, 'c>(
         .execute(&mut *conn)
         .await?;
         Ok(())
+    }
+}
+
+#[tracing::instrument(level = "trace", skip(conn))]
+pub fn list_access_logs<'a, 'c>(
+    conn: impl sqlx::Acquire<'c, Database = sqlx::Sqlite> + Send + 'a,
+    user_id: Option<i64>,
+    offset: Option<u32>,
+    limit: Option<u32>,
+) -> impl std::future::Future<
+    Output = Result<(Vec<crate::model::user::AccessLog>, u32), anyhow::Error>,
+> + Send
+       + 'a {
+    async move {
+        let mut conn = conn.acquire().await?;
+        let limit = limit.unwrap_or(20);
+        let offset = offset.unwrap_or(0);
+        if let Some(user_id) = user_id {
+            let rows = sqlx::query_as!(
+                crate::model::user::AccessLog,
+                r#"
+        SELECT
+            access_logs.id AS id,
+            access_logs.user_id AS user_id,
+            access_logs.request AS request,
+            access_logs.created_at AS created_at
+        FROM access_logs
+        WHERE access_logs.user_id = ?3
+        ORDER BY id ASC
+        LIMIT ?1 OFFSET ?2
+        "#,
+                limit,
+                offset,
+                user_id,
+            )
+            .fetch_all(&mut *conn)
+            .await?;
+            let next_offset = offset + rows.len() as u32;
+            Ok((rows, next_offset as u32))
+        } else {
+            let rows = sqlx::query_as!(
+                crate::model::user::AccessLog,
+                r#"
+            SELECT
+                access_logs.id AS id,
+                access_logs.user_id AS user_id,
+                access_logs.request AS request,
+                access_logs.created_at AS created_at
+            FROM access_logs
+            ORDER BY id ASC
+            LIMIT ?1 OFFSET ?2
+            "#,
+                limit,
+                offset
+            )
+            .fetch_all(&mut *conn)
+            .await?;
+            let next_offset = offset + rows.len() as u32;
+            Ok((rows, next_offset as u32))
+        }
     }
 }

@@ -31,5 +31,4 @@ pub struct AccessLog {
     pub user_id: i64,
     pub request: String,
     pub created_at: i64,
-    pub updated_at: i64,
 }
