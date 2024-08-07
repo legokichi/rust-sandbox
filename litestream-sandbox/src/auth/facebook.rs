@@ -26,6 +26,7 @@ impl Backend {
         Self { db, client }
     }
 
+    #[tracing::instrument]
     pub fn authorize_url(&self) -> (oauth2::url::Url, oauth2::CsrfToken) {
         self.client
             .authorize_url(oauth2::CsrfToken::new_random)
@@ -38,7 +39,7 @@ impl axum_login::AuthnBackend for Backend {
     type User = crate::model::user::User;
     type Credentials = super::Credentials;
     type Error = super::BackendError;
-
+    #[tracing::instrument]
     async fn authenticate(
         &self,
         creds: Self::Credentials,
@@ -91,6 +92,11 @@ impl axum_login::AuthnBackend for Backend {
         let facebook_id = user_info.id.parse::<i64>().map_err(anyhow::Error::from)?;
         let mut db = self.db.acquire().await.unwrap();
         if let Some(user) = creds.user {
+            if user.facebook_id.is_some() {
+                log::info!("login: {:?} {:?}", user, user_info);
+                return Ok(Some(user));
+            }
+            log::info!("update account: {:?}", user_info);
             crate::db::user::update_user(
                 &mut *db,
                 user.id,
@@ -103,6 +109,7 @@ impl axum_login::AuthnBackend for Backend {
             .map_err(anyhow::Error::from)?;
             Ok(Some(user))
         } else {
+            log::info!("signup: {:?}", user_info);
             let user = crate::db::user::create_user(
                 &mut *db,
                 crate::db::user::OAuthProvider::Facebook(facebook_id, user_info.name),
@@ -113,6 +120,7 @@ impl axum_login::AuthnBackend for Backend {
         }
     }
 
+    #[tracing::instrument]
     async fn get_user(
         &self,
         user_id: &axum_login::UserId<Self>,

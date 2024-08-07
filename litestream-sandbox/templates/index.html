@@ -6,9 +6,12 @@
 </head>
 
 <body>
+    <p>
+        id: {{user.id}}
+    </p>
     {% if let Some(github_id) = user.github_id %}
     <p>
-        {{ github_id }}
+        github: {{ github_id }}
     </p>
     {% else %}
     <form method="post" action="/login">
@@ -18,7 +21,7 @@
     {% endif %}
     {% if let Some(facebook_id) = user.facebook_id %}
     <p>
-        {{ facebook_id }}
+        facebook: {{ facebook_id }}
     </p>
     {% else %}
     <form method="post" action="/login">
@@ -26,6 +29,9 @@
         <input type="hidden" name="provider" value="facebook" />
     </form>
     {% endif %}
+    <form method="post" action="/logout">
+        <input type="submit" value="logout" />
+    </form>
 </body>
 
 {% else %}
@@ -35,6 +41,11 @@
 </head>
 
 <body>
+    <form method="post" action="/login">
+        <input type="submit" value="Local Login" />
+        <input type="hidden" name="provider" value="local" />
+    </form>
+
     <form method="post" action="/login">
         <input type="submit" value="GitHub Login" />
         <input type="hidden" name="provider" value="github" />

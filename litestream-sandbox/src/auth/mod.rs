@@ -16,8 +16,10 @@ pub struct Credentials {
     pub user: Option<crate::model::user::User>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum OAuthProvider {
+    Local,
     Github,
     Facebook,
     //Instagram,
@@ -26,6 +28,7 @@ impl std::str::FromStr for OAuthProvider {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "local" => Ok(Self::Local),
             "github" => Ok(Self::Github),
             "facebook" => Ok(Self::Facebook),
             //"instagram" => Ok(Self::Instagram),
@@ -36,6 +39,7 @@ impl std::str::FromStr for OAuthProvider {
 impl std::fmt::Display for OAuthProvider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Local => write!(f, "local"),
             Self::Github => write!(f, "github"),
             Self::Facebook => write!(f, "facebook"),
             //Self::Instagram => write!(f, "instagram"),
@@ -49,6 +53,7 @@ pub struct BackendError(#[from] pub anyhow::Error);
 
 #[derive(Debug, Clone)]
 pub struct Backend {
+    local: crate::auth::github::Backend,
     github: crate::auth::github::Backend,
     facebook: crate::auth::facebook::Backend,
     //instagram: crate::auth::instagram::Backend,
@@ -57,12 +62,19 @@ pub struct Backend {
 impl Backend {
     pub fn new(
         db: sqlx::SqlitePool,
+        local: crate::auth::ClientToken,
         github: crate::auth::ClientToken,
         facebook: crate::auth::ClientToken,
         //instagram: crate::auth::instagram::ClientToken,
         redirect_url: oauth2::RedirectUrl,
     ) -> Self {
         Self {
+            local: crate::auth::github::Backend::new(
+                db.clone(),
+                local,
+                oauth2::RedirectUrl::new("http://127.0.0.1:8080/oauth/callback".to_string())
+                    .unwrap(),
+            ),
             github: crate::auth::github::Backend::new(db.clone(), github, redirect_url.clone()),
             facebook: crate::auth::facebook::Backend::new(
                 db.clone(),
@@ -79,6 +91,7 @@ impl Backend {
 
     pub fn authorize_url(&self, provider: OAuthProvider) -> (oauth2::url::Url, oauth2::CsrfToken) {
         match provider {
+            OAuthProvider::Local => self.local.authorize_url(),
             OAuthProvider::Github => self.github.authorize_url(),
             OAuthProvider::Facebook => self.facebook.authorize_url(),
             //OAuthProvider::Instagram => self.instagram.authorize_url(),
@@ -97,6 +110,7 @@ impl axum_login::AuthnBackend for Backend {
         creds: Self::Credentials,
     ) -> Result<Option<Self::User>, Self::Error> {
         match creds.provider {
+            OAuthProvider::Local => self.local.authenticate(creds).await,
             OAuthProvider::Github => self.github.authenticate(creds).await,
             OAuthProvider::Facebook => self.facebook.authenticate(creds).await,
             //OAuthProvider::Instagram => self

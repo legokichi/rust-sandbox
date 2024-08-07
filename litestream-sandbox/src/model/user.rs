@@ -24,3 +24,12 @@ impl axum_login::AuthUser for User {
         }
     }
 }
+
+#[derive(Debug, serde::Deserialize, serde::Serialize, Clone, PartialEq, Eq, sqlx::FromRow)]
+pub struct AccessLog {
+    pub id: i64,
+    pub user_id: i64,
+    pub request: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}

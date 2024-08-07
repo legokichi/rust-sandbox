@@ -4,3 +4,7 @@ dbs:
       - type: gcs
         bucket: duxca-litestream-sandbox
         path: hoge.db
+        retention: 3m
+        retention-check-interval: 1m
+
+

@@ -93,6 +93,11 @@ impl axum_login::AuthnBackend for Backend {
 
         let mut db = self.db.acquire().await.map_err(anyhow::Error::from)?;
         if let Some(user) = creds.user {
+            if user.github_id.is_some() {
+                log::info!("login: {:?} {:?}", user, user_info);
+                return Ok(Some(user));
+            }
+            log::info!("update account: {:?}", user_info);
             crate::db::user::update_user(
                 &mut *db,
                 user.id,
@@ -105,12 +110,14 @@ impl axum_login::AuthnBackend for Backend {
             .map_err(|o| dbg!(o))?;
             Ok(Some(user))
         } else {
+            log::info!("signup: {:?}", user_info);
             let user = crate::db::user::create_user(
                 &mut *db,
                 crate::db::user::OAuthProvider::Github(user_info.id, user_info.login),
             )
             .await
             .map_err(|o| dbg!(o))?;
+            dbg!(&user);
             Ok(Some(user))
         }
     }
@@ -120,6 +127,7 @@ impl axum_login::AuthnBackend for Backend {
         user_id: &axum_login::UserId<Self>,
     ) -> Result<Option<Self::User>, Self::Error> {
         let user = crate::db::user::get_user(&self.db, *user_id).await?;
+        dbg!(&user);
         Ok(user)
     }
 }
