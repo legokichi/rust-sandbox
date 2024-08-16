@@ -113,6 +113,7 @@ async fn main() -> Result<(), anyhow::Error> {
             axum::routing::get(crate::web::login::callback),
         )
         .route("/api", axum::routing::post(crate::web::api::api))
+        // .nest_service("/", tower_http::services::ServeDir::new("static"))
         .layer(axum_login::AuthManagerLayerBuilder::new(backend, session_layer).build())
         .layer(
             tower_http::cors::CorsLayer::new()
