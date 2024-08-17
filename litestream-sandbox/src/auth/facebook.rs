@@ -65,7 +65,6 @@ impl axum_login::AuthnBackend for Backend {
             .await
             .map_err(anyhow::Error::from)?;
         // Use access token to request user info.
-        // https://developers.facebook.com/docs/instagram-basic-display-api/reference/me?locale=ja_JP
         #[derive(Debug, serde::Deserialize)]
         struct FacebookUserInfo {
             // legokichi

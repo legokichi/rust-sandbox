@@ -1,6 +1,5 @@
 pub mod facebook;
 pub mod github;
-//pub mod instagram;
 
 pub struct ClientToken {
     pub client_id: oauth2::ClientId,
@@ -22,7 +21,6 @@ pub enum OAuthProvider {
     Local,
     Github,
     Facebook,
-    //Instagram,
 }
 impl std::str::FromStr for OAuthProvider {
     type Err = anyhow::Error;
@@ -31,7 +29,6 @@ impl std::str::FromStr for OAuthProvider {
             "local" => Ok(Self::Local),
             "github" => Ok(Self::Github),
             "facebook" => Ok(Self::Facebook),
-            //"instagram" => Ok(Self::Instagram),
             _ => Err(anyhow::anyhow!("invalid OAuth provider: {}", s)),
         }
     }
@@ -42,7 +39,6 @@ impl std::fmt::Display for OAuthProvider {
             Self::Local => write!(f, "local"),
             Self::Github => write!(f, "github"),
             Self::Facebook => write!(f, "facebook"),
-            //Self::Instagram => write!(f, "instagram"),
         }
     }
 }
@@ -56,7 +52,6 @@ pub struct Backend {
     local: crate::auth::github::Backend,
     github: crate::auth::github::Backend,
     facebook: crate::auth::facebook::Backend,
-    //instagram: crate::auth::instagram::Backend,
 }
 
 impl Backend {
@@ -65,7 +60,6 @@ impl Backend {
         local: crate::auth::ClientToken,
         github: crate::auth::ClientToken,
         facebook: crate::auth::ClientToken,
-        //instagram: crate::auth::instagram::ClientToken,
         redirect_url: oauth2::RedirectUrl,
     ) -> Self {
         Self {
@@ -81,11 +75,6 @@ impl Backend {
                 facebook,
                 redirect_url.clone(),
             ),
-            //  instagram: crate::auth::instagram::Backend::new(
-            //      db.clone(),
-            //      instagram,
-            //      redirect_url.clone(),
-            //  ),
         }
     }
 
@@ -94,7 +83,6 @@ impl Backend {
             OAuthProvider::Local => self.local.authorize_url(),
             OAuthProvider::Github => self.github.authorize_url(),
             OAuthProvider::Facebook => self.facebook.authorize_url(),
-            //OAuthProvider::Instagram => self.instagram.authorize_url(),
         }
     }
 }
@@ -113,15 +101,6 @@ impl axum_login::AuthnBackend for Backend {
             OAuthProvider::Local => self.local.authenticate(creds).await,
             OAuthProvider::Github => self.github.authenticate(creds).await,
             OAuthProvider::Facebook => self.facebook.authenticate(creds).await,
-            //OAuthProvider::Instagram => self
-            //    .instagram
-            //    .authenticate(crate::auth::instagram::Credentials {
-            //        code: creds.code,
-            //        old_state: creds.old_state,
-            //        new_state: creds.new_state,
-            //    })
-            //    .await
-            //    .map_err(|o| o.0.into()),
         }
     }
 

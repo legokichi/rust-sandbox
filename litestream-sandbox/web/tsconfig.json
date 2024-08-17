@@ -1,0 +1,98 @@
+{
+    "version": "2.0.0",
+    "compilerOptions": {
+        // Type Checking
+        "allowUnreachableCode": false,
+        "allowUnusedLabels": false,
+        "alwaysStrict": true,
+        "exactOptionalPropertyTypes": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitAny": true,
+        "noImplicitOverride": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "noUncheckedIndexedAccess": false,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "strict": true,
+        "strictBindCallApply": true,
+        "strictFunctionTypes": true,
+        "strictNullChecks": true,
+        "strictPropertyInitialization": true,
+        "useUnknownInCatchVariables": true,
+        // module
+        "module": "ESNext",
+        "moduleResolution": "Node",
+        "resolveJsonModule": true,
+        "allowImportingTsExtensions": true,
+        // "rootDir": ".",
+        // "types": [],
+        // emit
+        "declaration": false,
+        "emitBOM": false,
+        "inlineSourceMap": false,
+        "inlineSources": false,
+        "newLine": "LF",
+        "noEmit": true,
+        "noEmitHelpers": false,
+        "noEmitOnError": true,
+        // "outDir": "lib",
+        "preserveConstEnums": true,
+        "removeComments": false,
+        "sourceMap": false,
+        "stripInternal": false,
+        // js support
+        "allowJs": false,
+        // interop constraints
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": false,
+        "isolatedModules": true,
+        // backword compatibility
+        "noImplicitUseStrict": false,
+        "noStrictGenericChecks": false,
+        // language and environment
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        // "lib": ["ES2019", "dom"],
+        "moduleDetection": "auto",
+        "noLib": false,
+        "target": "ESNext",
+        "useDefineForClassFields": true,
+        // compiler diagnostics
+        "diagnostics": false,
+        "explainFiles": false,
+        "extendedDiagnostics": false,
+        "listEmittedFiles": true,
+        "listFiles": true,
+        "traceResolution": false,
+        // project
+        "incremental": false,
+        // output formatting
+        "noErrorTruncation": true,
+        "pretty": true,
+        "skipLibCheck": true,
+        "composite": true,
+    },
+    "formatCodeOptions": {
+        "indentSize": 2,
+        "tabSize": 2,
+        "newLineCharacter": "\n",
+        "convertTabsToSpaces": true,
+        "insertSpaceAfterCommaDelimiter": true,
+        "insertSpaceAfterSemicolonInForStatements": true,
+        "insertSpaceBeforeAndAfterBinaryOperators": true,
+        "insertSpaceAfterKeywordsInControlFlowStatements": true,
+        "insertSpaceAfterFunctionKeywordForAnonymousFunctions": true,
+        "insertSpaceAfterOpeningAndBeforeClosingNonemptyParenthesis": false,
+        "placeOpenBraceOnNewLineForFunctions": true,
+        "placeOpenBraceOnNewLineForControlBlocks": true
+    },
+    // "files": [
+    //     "main.ts"
+    // ],
+    "exclude": [
+        "node_modules"
+    ]
+}

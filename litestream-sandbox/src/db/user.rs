@@ -42,7 +42,6 @@ pub fn list_users<'a, 'c>(
 pub enum OAuthProvider {
     Github(i64, String),
     Facebook(i64, String),
-    //Instagram(i64, String),
 }
 
 #[tracing::instrument(level = "trace", skip(conn))]
@@ -61,9 +60,7 @@ pub fn create_user<'a, 'c>(
             }
             OAuthProvider::Facebook(facebook_id, name) => {
                 create_user_by_facebook(&mut tx, facebook_id, name).await
-            } //OAuthProvider::Instagram(_instagram_id, _name) => {
-              //    todo!()
-              //}
+            }
         };
         tx.commit().await?;
         res
@@ -233,21 +230,7 @@ pub fn update_user<'a, 'c>(
                     )
                     .execute(&mut *tx)
                     .await?;
-                } //OAuthProvider::Instagram(instagram_id, name) => {
-                  //    sqlx::query!(
-                  //        r#"
-                  //    INSERT INTO instagram ( user_id, instagram_id, name )
-                  //    VALUES ( ?1, ?2, ?3 )
-                  //    ON CONFLICT ( user_id )
-                  //    DO UPDATE SET instagram_id = ?2, name = ?3, updated_at = strftime('%s', 'now')
-                  //    "#,
-                  //        user_id,
-                  //        instagram_id,
-                  //        name
-                  //    )
-                  //    .execute(&mut *tx)
-                  //    .await?;
-                  //}
+                }
             }
         }
         let user = get_user(&mut tx, user_id).await?.unwrap();

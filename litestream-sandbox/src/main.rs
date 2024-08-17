@@ -14,8 +14,6 @@ struct Config {
     local_client_secret: oauth2::ClientSecret,
     facebook_client_id: oauth2::ClientId,
     facebook_client_secret: oauth2::ClientSecret,
-    //instagram_client_id: oauth2::ClientId,
-    //instagram_client_secret: oauth2::ClientSecret,
     redirect_url: oauth2::RedirectUrl,
 }
 
@@ -40,8 +38,6 @@ async fn main() -> Result<(), anyhow::Error> {
         local_client_secret,
         facebook_client_id,
         facebook_client_secret,
-        //instagram_client_id,
-        //instagram_client_secret,
         redirect_url,
     } = envy::from_env::<Config>()?;
     use std::str::FromStr;
@@ -90,10 +86,6 @@ async fn main() -> Result<(), anyhow::Error> {
             client_id: facebook_client_id.clone(),
             client_secret: facebook_client_secret.clone(),
         },
-        // crate::auth::instagram::ClientToken {
-        //     client_id: instagram_client_id.clone(),
-        //     client_secret: instagram_client_secret.clone(),
-        // },
         redirect_url,
     );
     // 一般のリクエストで DB にアクセスするための State

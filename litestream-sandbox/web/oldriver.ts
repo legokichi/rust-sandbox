@@ -1,4 +1,6 @@
-import './style.css';
+import xs from 'xstream';
+import type { Driver } from '@cycle/run'
+import type { Stream } from 'xstream';
 import { Map, View, Feature, Overlay } from 'ol';
 import * as layer from 'ol/layer';
 import * as source from 'ol/source';
@@ -7,66 +9,9 @@ import * as controls from 'ol/control';
 import * as geom from 'ol/geom';
 import * as style from 'ol/style';
 import { circular } from 'ol/geom/Polygon';
-import { Coordinate } from 'ol/coordinate';
-import xs from 'xstream';
-import { Stream } from 'xstream';
-import { run, Driver } from '@cycle/run'
+import type { Coordinate } from 'ol/coordinate';
 // import Attribution from 'ol/control/Attribution';
-
-
-interface GeoLocation {
-  longtiude: number;
-  latitude: number;
-  accuracy: number;
-}
-interface GeoSource {
-  pos$: Stream<GeoLocation>
-}
-type GeoCommand = never;
-
-function makeGeoLocationDriver(): Driver<Stream<GeoCommand>, GeoSource> {
-  let watchId: number | null = null;
-  function geolocationDriver(outgoing$: Stream<GeoCommand>) {
-    const pos$ = xs.create<GeoLocation>({
-      start: (listener) => {
-        console.log("start");
-        watchId = navigator.geolocation.watchPosition(
-          (pos) => {
-            console.log(pos);
-            pos.coords.accuracy
-            listener.next({
-              longtiude: pos.coords.longitude,
-              latitude: pos.coords.latitude,
-              accuracy: pos.coords.accuracy
-            });
-          },
-          (err) => {
-            console.error(err);
-          },
-          {
-            enableHighAccuracy: true,
-          }
-        );
-        outgoing$.addListener({
-          next: () => { console.log("next"); },
-          error: (err) => { console.error(err); },
-          complete: () => { console.log("complete"); },
-        });
-      },
-      stop: () => {
-        console.log("stop");
-        if (watchId !== null) {
-          navigator.geolocation.clearWatch(watchId);
-          watchId = null;
-        }
-      },
-    });
-    return {
-      pos$: pos$,
-    };
-  }
-  return geolocationDriver;
-}
+export type { Coordinate } from 'ol/coordinate';
 
 function transformWGS84toWebMercator(o: Coordinate): Coordinate {
   return prj.fromLonLat(o);
@@ -76,74 +21,58 @@ function transformWebMercatortoWGS84(o: Coordinate): Coordinate {
   return prj.toLonLat(o);
 }
 
-type OlCommand = OlCommandUpdateCurrentPosition | OlCommandFocus | OlCommandAddWaypoint;
-interface OlCommandUpdateCurrentPosition {
+export type OlCommand = OlCommandUpdateCurrentPosition | OlCommandFocus | OlCommandAddWaypoint;
+export interface OlCommandUpdateCurrentPosition {
   type: "updateCurrentPosition";
   longtiude: number;
   latitude: number;
   accuracy: number;
 }
-interface OlCommandFocus {
+export interface OlCommandFocus {
   type: "focus";
   longitude: number;
   latitude: number;
 };
-interface OlCommandAddWaypoint {
+export interface OlCommandAddWaypoint {
   type: "addWaypoint";
   longitude: number;
   latitude: number;
 }
-interface ClickMapEvent {
+export interface ClickMapEvent {
   longitude: number;
   latitude: number;
 }
-interface ClickGpsEvent {
+export interface ClickGpsEvent {
 }
-interface ClickAddWaypointEvent {
+export interface ClickPopupEvent {
+}
+export interface ClickAddWaypointEvent {
   longitude: number;
   latitude: number;
 }
-interface OlSource {
+export interface OlSource {
   clickMap$: Stream<ClickMapEvent>,
   clickGps$: Stream<ClickGpsEvent>,
   clickAddWaypoint$: Stream<ClickAddWaypointEvent>,
+  clickPopup$: Stream<ClickPopupEvent>,
 }
-function makeOpenLayersDriver(): Driver<Stream<OlCommand>, OlSource> {
-
-  const popupOverlay = new Overlay({
-    element: (() => {
-      const elm = document.createElement('div');
-      elm.classList.add("ol-popup");
-      elm.addEventListener("click", (evt) => {
-        console.log(evt);
-        evt.preventDefault();
-        evt.stopPropagation();
-      }, true);
-      elm.appendChild(document.createTextNode(""));
-      return elm;
-    })(),
-    positioning: 'bottom-center',
-    stopEvent: false,
-    offset: [0, 0],
-    position: [0, 0],
-  });
+export function makeOpenLayersDriver(): Driver<Stream<OlCommand>, OlSource> {
 
   const gpsLayer = new layer.Vector({
     source: new source.Vector(),
   });
-
-  // const pointsLayer = new layer.Vector({
-  //   source: new source.Vector(),
-  // });
 
   // const selectedPointLayer = new layer.Vector({
   //   source: new source.Vector(),
   // });
 
 
-  // EPSG:4326 (WGS 84 の EPSGコード) 座標系での富士山の位置
-  const FUJI: Coordinate = [138.7313889, 35.3622222];
-
+  
+  const pointsLayer = new layer.Vector({
+    source: new source.Vector(),
+  });
+  const CENTOR: Coordinate = [138.7313889, 35.3622222];
+  
   const map = new Map({
     target: 'map',
     layers: [
@@ -155,7 +84,7 @@ function makeOpenLayersDriver(): Driver<Stream<OlCommand>, OlSource> {
         })
       }),
       gpsLayer,
-      // pointsLayer
+      pointsLayer
     ],
     controls: controls.defaults({
       attributionOptions: ({
@@ -165,14 +94,14 @@ function makeOpenLayersDriver(): Driver<Stream<OlCommand>, OlSource> {
     view: new View({
       // Webメルカトル
       projection: "EPSG:3857",
-      center: transformWGS84toWebMercator(FUJI),
+      center: transformWGS84toWebMercator(CENTOR),
       maxZoom: 18,
       zoom: 15
     }),
     overlays: [
-      popupOverlay
     ],
   });
+
   const clickMap$ = xs.create<ClickMapEvent>({
     start: (listener) => {
       console.log("start");
@@ -234,33 +163,38 @@ function makeOpenLayersDriver(): Driver<Stream<OlCommand>, OlSource> {
           //     })
           //   ]);
           // }
-
-          // // ポイントを追加
-          // const wgs84Coords = transformWebMercatortoWGS84(evt.coordinate);
-          // const feat = new Feature({
-          //   type: "marker",
-          //   geometry: new geom.Point(evt.coordinate),
-          // });
-          // feat.setStyle(new style.Style({
-          //   image: new style.Circle({
-          //     radius: 10,
-          //     fill: new style.Fill({ color: 'red' }),
-          //     stroke: new style.Stroke({
-          //       color: 'black', width: 2
-          //     })
-          //   })
-          // }));
-          // pointsLayer.getSource()!.addFeatures([
-          //   feat
-          // ]);
-
-          // // ポップアップ表示
-          // const elm = popupOverlay.getElement()!;
-          // elm.firstChild!.textContent = `東経: ${wgs84Coords[0]}, 北緯: ${wgs84Coords[1]}`;
-          // popupOverlay.setPosition(evt.coordinate);
         }
       });
 
+    },
+    stop: () => {
+      console.log("stop");
+    },
+  });
+
+  const popupOverlay = new Overlay({
+    element: (() => {
+      const elm = document.createElement('div');
+      elm.classList.add("ol-popup");
+      elm.appendChild(document.createElement("textarea"));
+      // elm.appendChild(document.createTextNode(""));
+      return elm;
+    })(),
+    positioning: 'bottom-center',
+    stopEvent: true,
+    offset: [0, 0],
+    position: [0, 0],
+  });
+  map.addOverlay(popupOverlay);
+  const clickPopup$ = xs.create<ClickPopupEvent>({
+    start: (listener) => {
+      const elm = popupOverlay.getElement()!;
+      elm.addEventListener("click", (evt) => {
+        console.log(evt);
+        evt.preventDefault();
+        evt.stopPropagation();
+        listener.next({});
+      }, true);
     },
     stop: () => {
       console.log("stop");
@@ -273,8 +207,8 @@ function makeOpenLayersDriver(): Driver<Stream<OlCommand>, OlSource> {
       const locate = document.createElement('div');
       locate.className = 'ol-control ol-unselectable';
       locate.innerHTML = '<button title="Locate me">🚩</button>';
-      locate.style.top = '4em';
-      locate.style.left = '.5em';
+      locate.style.bottom = '3em';
+      locate.style.right = '.5em';
       locate.addEventListener('click', function () {
         const pos = transformWebMercatortoWGS84(map.getView()!.getCenter()!);
         listener.next({
@@ -298,8 +232,8 @@ function makeOpenLayersDriver(): Driver<Stream<OlCommand>, OlSource> {
       const locate = document.createElement('div');
       locate.className = 'ol-control ol-unselectable';
       locate.innerHTML = '<button title="Locate me">◎</button>';
-      locate.style.top = '6em';
-      locate.style.left = '.5em';
+      locate.style.bottom = '1em';
+      locate.style.right = '.5em';
       locate.addEventListener('click', function () {
         listener.next({});
       });
@@ -313,14 +247,31 @@ function makeOpenLayersDriver(): Driver<Stream<OlCommand>, OlSource> {
     },
   });
 
-  return function openLayersDriver(outgoing$: Stream<OlCommand>): OlSource {
+
+  const centerCrossControl = new controls.Control({
+    element: (() => {
+      const locate = document.createElement('div');
+      locate.className = 'ol-unselectable';
+      locate.innerHTML = '+';
+      locate.style.position = 'absolute';
+      locate.style.top = '50%';
+      locate.style.left = '50%';
+      locate.style.transform = 'translate(-50%, -50%)';
+      locate.style.fontSize = '24px';
+      locate.style.color = "black";
+      locate.style.pointerEvents = 'none';
+      return locate;
+    })(),
+  });
+  map.addControl(centerCrossControl);
+
+  function openLayersDriver(outgoing$: Stream<OlCommand>): OlSource {
     outgoing$.addListener({
       next: (outgoing) => {
         switch (outgoing.type) {
           case "updateCurrentPosition": {
             const wgs84Coords: Coordinate = [outgoing.longtiude, outgoing.latitude];
             const accuracy = new Feature(circular(wgs84Coords, outgoing.accuracy).transform('EPSG:4326', map.getView().getProjection()))
-            // const centor = new Feature(new geom.Point(prj.fromLonLat(wgs84Coords)));
             const src = gpsLayer.getSource()!;
             src.clear(true);
             src.addFeatures([
@@ -336,22 +287,23 @@ function makeOpenLayersDriver(): Driver<Stream<OlCommand>, OlSource> {
             const wgs84Coords: Coordinate = [outgoing.longitude, outgoing.latitude];
             const feat = new Feature({
               type: "marker",
-              geometry: new geom.Point(prj.fromLonLat(wgs84Coords)),
+              geometry: new geom.Point(transformWGS84toWebMercator((wgs84Coords))),
             });
             feat.setStyle(new style.Style({
               image: new style.Circle({
-                radius: 10,
+                radius: 5,
                 fill: new style.Fill({ color: 'red' }),
                 stroke: new style.Stroke({
                   color: 'black', width: 2
                 })
               })
             }));
-            gpsLayer.getSource()!.addFeature(feat);
+            pointsLayer.getSource()!.addFeatures([feat]);
             // ポップアップ表示
             const elm = popupOverlay.getElement()!;
-            elm.firstChild!.textContent = `東経: ${wgs84Coords[0]}, 北緯: ${wgs84Coords[1]}`;
+            elm.firstChild!.textContent = `${wgs84Coords[0]}, ${wgs84Coords[1]}`;
             popupOverlay.setPosition(prj.fromLonLat(wgs84Coords));
+            map.getView().setCenter(transformWGS84toWebMercator([outgoing.longitude, outgoing.latitude]));
             break;
           }
         }
@@ -367,67 +319,8 @@ function makeOpenLayersDriver(): Driver<Stream<OlCommand>, OlSource> {
       clickAddWaypoint$,
       clickMap$,
       clickGps$,
+      clickPopup$,
     };
   }
+  return openLayersDriver;
 }
-
-interface Sources {
-  OL: OlSource;
-  GEO: GeoSource;
-}
-
-interface Sinks {
-  OL: Stream<OlCommand>;
-  GEO: Stream<GeoCommand>;
-}
-
-function main(o: Sources): Sinks {
-  const {
-    OL: { clickGps$, clickMap$, clickAddWaypoint$ },
-    GEO: { pos$ },
-  } = o;
-  const ol$1: Stream<OlCommand> = xs.combine(clickGps$, pos$).map(
-    ([click, pos]): OlCommand => {
-      return {
-        type: "focus",
-        longitude: pos.longtiude,
-        latitude: pos.latitude,
-      };
-    }
-  );
-  const ol$2: Stream<OlCommand> = pos$.map(({
-    longtiude,
-    latitude,
-    accuracy
-  }): OlCommand => {
-    return {
-      type: "updateCurrentPosition",
-      longtiude,
-      latitude,
-      accuracy
-    };
-  });
-  const ol$3: Stream<OlCommand> = clickAddWaypoint$.map(({
-    longitude,
-    latitude
-  }): OlCommand => {
-    return {
-      type: "addWaypoint",
-      longitude,
-      latitude,
-    };
-  });
-  return {
-    OL: xs.merge(ol$1, ol$2, ol$3),
-    GEO: xs.never(),
-  };
-}
-
-
-
-run(main, {
-  GEO: makeGeoLocationDriver(),
-  OL: makeOpenLayersDriver(),
-});
-
-
