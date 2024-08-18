@@ -98,7 +98,7 @@ impl axum_login::AuthnBackend for Backend {
             log::info!("update account: {:?}", user_info);
             crate::db::user::update_user(
                 &mut *db,
-                user.id,
+                user.user_id,
                 Some(crate::db::user::OAuthProvider::Facebook(
                     facebook_id,
                     user_info.name,

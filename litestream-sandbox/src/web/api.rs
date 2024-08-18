@@ -23,7 +23,7 @@ pub async fn api(
             let Ok(req) = serde_json::from_value::<crate::model::api::Request>(json) else {
                 return Ok((axum::http::StatusCode::BAD_REQUEST, "invalid request").into_response());
             };
-            let res = crate::api::handler(st, user.id, req).await?;
+            let res = crate::api::handler(st, user.user_id, req).await?;
             let json = serde_json::to_value(res)?;
             Ok(axum::response::Json::from(json).into_response())
         }

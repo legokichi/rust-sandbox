@@ -39,7 +39,7 @@ INSERT INTO users (role_id) VALUES (2); -- admin user
 INSERT INTO github (github_id, user_id, login) VALUES (2429307, 1, 'legokichi');
 
 CREATE TABLE access_logs (
-    access_logs_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    access_log_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     request TEXT NOT NULL,
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),

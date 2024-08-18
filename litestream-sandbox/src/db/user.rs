@@ -17,15 +17,15 @@ pub fn list_users<'a, 'c>(
             crate::model::user::User,
             r#"
         SELECT
-            users.id AS id,
-            github.id AS "github_id?",
-            facebook.id AS "facebook_id?",
+            users.user_id AS user_id,
+            github.github_id AS "github_id?",
+            facebook.facebook_id AS "facebook_id?",
             users.created_at AS created_at,
             users.updated_at AS updated_at
         FROM users
-        LEFT OUTER JOIN github ON users.id = github.user_id
-        LEFT OUTER JOIN facebook ON users.id = facebook.user_id
-        ORDER BY id, id ASC
+        LEFT OUTER JOIN github ON users.user_id = github.user_id
+        LEFT OUTER JOIN facebook ON users.user_id = facebook.user_id
+        ORDER BY user_id ASC
         LIMIT ?1 OFFSET ?2
         "#,
             limit,
@@ -82,15 +82,15 @@ fn create_user_by_github<'a, 'c>(
             crate::model::user::User,
             r#"
             SELECT
-                users.id AS id,
-                github.id AS github_id,
-                facebook.id AS facebook_id,
+                users.user_id AS user_id,
+                github.github_id AS github_id,
+                facebook.facebook_id AS facebook_id,
                 users.created_at AS created_at,
                 users.updated_at AS updated_at
             FROM users
-            LEFT OUTER JOIN github ON github.user_id = users.id
-            LEFT OUTER JOIN facebook ON facebook.user_id = users.id
-            WHERE github.id = ?1
+            LEFT OUTER JOIN github ON github.user_id = users.user_id
+            LEFT OUTER JOIN facebook ON facebook.user_id = users.user_id
+            WHERE github.github_id = ?1
             "#,
             github_id
         )
@@ -104,7 +104,7 @@ fn create_user_by_github<'a, 'c>(
         let user = sqlx::query!(
             r#"
             INSERT INTO users DEFAULT VALUES
-            RETURNING id
+            RETURNING user_id
             "#
         )
         .fetch_one(&mut *tx)
@@ -112,16 +112,16 @@ fn create_user_by_github<'a, 'c>(
         // アカウント情報を登録
         sqlx::query!(
             r#"
-            INSERT INTO github ( user_id, id, login )
+            INSERT INTO github ( user_id, github_id, login )
             VALUES ( ?1, ?2, ?3 )
             "#,
-            user.id,
+            user.user_id,
             github_id,
             login
         )
         .execute(&mut *tx)
         .await?;
-        let user = get_user(&mut tx, user.id).await?.unwrap();
+        let user = get_user(&mut tx, user.user_id).await?.unwrap();
         tx.commit().await?;
         Ok(user)
     }
@@ -142,15 +142,15 @@ fn create_user_by_facebook<'a, 'c>(
             crate::model::user::User,
             r#"
             SELECT
-                users.id AS id,
-                github.id AS github_id,
-                facebook.id AS facebook_id,
+                users.user_id AS user_id,
+                github.github_id AS github_id,
+                facebook.facebook_id AS facebook_id,
                 users.created_at AS created_at,
                 users.updated_at AS updated_at
             FROM users
-            LEFT OUTER JOIN github ON github.user_id = users.id
-            LEFT OUTER JOIN facebook ON facebook.user_id = users.id
-            WHERE facebook.id = ?1
+            LEFT OUTER JOIN github ON github.user_id = users.user_id
+            LEFT OUTER JOIN facebook ON facebook.user_id = users.user_id
+            WHERE facebook.facebook_id = ?1
             "#,
             facebook_id
         )
@@ -164,7 +164,7 @@ fn create_user_by_facebook<'a, 'c>(
         let user = sqlx::query!(
             r#"
             INSERT INTO users DEFAULT VALUES
-            RETURNING id
+            RETURNING user_id
             "#
         )
         .fetch_one(&mut *tx)
@@ -172,16 +172,16 @@ fn create_user_by_facebook<'a, 'c>(
         // facebook アカウント情報を登録
         sqlx::query!(
             r#"
-            INSERT INTO facebook ( user_id, id, name )
+            INSERT INTO facebook ( user_id, facebook_id, name )
             VALUES ( ?1, ?2, ?3 )
             "#,
-            user.id,
+            user.user_id,
             facebook_id,
             name
         )
         .execute(&mut *tx)
         .await?;
-        let user = get_user(&mut tx, user.id).await?.unwrap();
+        let user = get_user(&mut tx, user.user_id).await?.unwrap();
         tx.commit().await?;
         Ok(user)
     }
@@ -204,10 +204,10 @@ pub fn update_user<'a, 'c>(
                 OAuthProvider::Github(github_id, login) => {
                     sqlx::query!(
                         r#"
-                    INSERT INTO github ( user_id, id, login )
+                    INSERT INTO github ( user_id, github_id, login )
                     VALUES ( ?1, ?2, ?3 )
                     ON CONFLICT ( user_id )
-                    DO UPDATE SET id = ?2, login = ?3, updated_at = strftime('%s', 'now')
+                    DO UPDATE SET github_id = ?2, login = ?3, updated_at = strftime('%s', 'now')
                     "#,
                         user_id,
                         github_id,
@@ -219,10 +219,10 @@ pub fn update_user<'a, 'c>(
                 OAuthProvider::Facebook(facebook_id, name) => {
                     sqlx::query!(
                         r#"
-                    INSERT INTO facebook ( user_id, id, name )
+                    INSERT INTO facebook ( user_id, facebook_id, name )
                     VALUES ( ?1, ?2, ?3 )
                     ON CONFLICT ( user_id )
-                    DO UPDATE SET id = ?2, name = ?3, updated_at = strftime('%s', 'now')
+                    DO UPDATE SET facebook_id = ?2, name = ?3, updated_at = strftime('%s', 'now')
                     "#,
                         user_id,
                         facebook_id,
@@ -251,15 +251,15 @@ pub fn get_user<'a, 'c>(
             crate::model::user::User,
             r#"
         SELECT 
-            users.id AS id,
-            github.id AS "github_id?",
-            facebook.id AS "facebook_id?",
+            users.user_id AS user_id,
+            github.github_id AS "github_id?",
+            facebook.facebook_id AS "facebook_id?",
             users.created_at AS created_at,
             users.updated_at AS updated_at
         FROM users 
-        LEFT OUTER JOIN github ON users.id = github.user_id
-        LEFT OUTER JOIN facebook ON users.id = facebook.user_id
-        WHERE users.id = ?1
+        LEFT OUTER JOIN github ON users.user_id = github.user_id
+        LEFT OUTER JOIN facebook ON users.user_id = facebook.user_id
+        WHERE users.user_id = ?1
         "#,
             id
         )
@@ -301,10 +301,10 @@ pub fn check_permission<'a, 'c>(
         let row = sqlx::query!(
             r#"
             SELECT
-                roles.name AS role_name
+                roles.role_name AS role_name
             FROM users
-            JOIN roles ON users.role_id = roles.id
-            WHERE users.id = ?1
+            JOIN roles ON users.role_id = roles.role_id
+            WHERE users.user_id = ?1
             "#,
             user_id
         )
@@ -366,13 +366,13 @@ pub fn list_access_logs<'a, 'c>(
                 crate::model::user::AccessLog,
                 r#"
         SELECT
-            access_logs.id AS id,
+            access_logs.access_log_id AS access_log_id,
             access_logs.user_id AS user_id,
             access_logs.request AS request,
             access_logs.created_at AS created_at
         FROM access_logs
         WHERE access_logs.user_id = ?3
-        ORDER BY id ASC
+        ORDER BY access_log_id ASC
         LIMIT ?1 OFFSET ?2
         "#,
                 limit,
@@ -388,12 +388,12 @@ pub fn list_access_logs<'a, 'c>(
                 crate::model::user::AccessLog,
                 r#"
             SELECT
-                access_logs.id AS id,
+                access_logs.access_log_id AS access_log_id,
                 access_logs.user_id AS user_id,
                 access_logs.request AS request,
                 access_logs.created_at AS created_at
             FROM access_logs
-            ORDER BY id ASC
+            ORDER BY access_log_id ASC
             LIMIT ?1 OFFSET ?2
             "#,
                 limit,

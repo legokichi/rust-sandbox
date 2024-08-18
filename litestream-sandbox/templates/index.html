@@ -30,7 +30,7 @@
     <header>
         {% if let Some(user) = user %}
         <p>
-            id: {{user.id}}
+            id: {{user.user_id}}
         </p>
         {% if let Some(github_id) = user.github_id %}
         <p>
