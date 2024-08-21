@@ -20,6 +20,12 @@ $ sqlite3 hoge.db
 - https://www.sqlite.org/pragma.html#pragma_auto_vacuum
 - https://cloud.google.com/run/docs/configuring/secrets?hl=ja
 - https://litestream.io/guides/gcs/
+- https://openlayers.org/workshop/en/mobile/geolocation.html
+- https://openlayers.org/en/latest/apidoc/module-ol_Feature-Feature.html
+- https://djc.github.io/askama/template_syntax.html
+- https://japan-safe-paddling.org/link/
+- https://www.japanriversup.com/%E3%82%BB%E3%83%BC%E3%83%95%E3%83%86%E3%82%A3/%E5%B7%9D%E3%82%92%E7%9F%A5%E3%82%8B-%E6%B5%81%E3%82%8C%E3%82%92%E7%9F%A5%E3%82%8B/
+- https://www.gsi.go.jp/kohokocho/map-sign-tizukigou-2022-itiran.html
 
 
 ## accounts
