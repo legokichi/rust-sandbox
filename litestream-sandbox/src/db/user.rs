@@ -315,8 +315,11 @@ pub fn check_permission<'a, 'c>(
         }
         if row.role_name == "default" {
             let flag = match req {
-                crate::model::api::Request::ListUser(..) => false,
+                crate::model::api::Request::ListUsers(..) => false,
                 crate::model::api::Request::ListAccessLogs(..) => false,
+                crate::model::api::Request::ListRivers(..) => true,
+                crate::model::api::Request::ListRiverWaypoints(..) => true,
+                crate::model::api::Request::CreateRiverWaypoint(..) => false,
             };
             return Ok(flag);
         }
