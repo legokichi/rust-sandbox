@@ -1,4 +1,4 @@
-PRAGMA foreign_keys = true;
+PRAGMA foreign_keys = ON;
 
 CREATE TABLE roles (
     role_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -22,7 +22,7 @@ CREATE TABLE github (
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-);
+) WITHOUT ROWID;
 
 CREATE TABLE facebook (
     facebook_id INTEGER NOT NULL PRIMARY KEY,
@@ -31,7 +31,7 @@ CREATE TABLE facebook (
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
-);
+) WITHOUT ROWID;
 
 INSERT INTO roles (role_name) VALUES ('default');
 INSERT INTO roles (role_name) VALUES ('admin');

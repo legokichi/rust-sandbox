@@ -1,18 +1,18 @@
--- Add migration script here
+PRAGMA foreign_keys = ON;
 
 CREATE TABLE rivers (
    river_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-   river_name TEXT NOT NULL,
+   name TEXT NOT NULL,
    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
    updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
 );
-INSERT INTO rivers (river_name) VALUES ('荒川長瀞');
-INSERT INTO rivers (river_name) VALUES ('多摩川');
-INSERT INTO rivers (river_name) VALUES ('久慈川');
-INSERT INTO rivers (river_name) VALUES ('利根川');
-INSERT INTO rivers (river_name) VALUES ('富士川');
-INSERT INTO rivers (river_name) VALUES ('阿賀野川');
-INSERT INTO rivers (river_name) VALUES ('本栖湖');
+INSERT INTO rivers (name) VALUES ('荒川長瀞');
+INSERT INTO rivers (name) VALUES ('多摩川');
+INSERT INTO rivers (name) VALUES ('久慈川');
+INSERT INTO rivers (name) VALUES ('利根川');
+INSERT INTO rivers (name) VALUES ('富士川');
+INSERT INTO rivers (name) VALUES ('阿賀野川');
+INSERT INTO rivers (name) VALUES ('本栖湖');
 
 CREATE TABLE river_paths (
     ancestor INTEGER NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE river_paths (
     PRIMARY KEY (ancestor, descendant),
     FOREIGN KEY (ancestor) REFERENCES rivers(river_id),
     FOREIGN KEY (descendant) REFERENCES rivers(river_id)
-);
+) WITHOUT ROWID;
 INSERT INTO river_paths (ancestor, descendant) VALUES (1, 1);
 INSERT INTO river_paths (ancestor, descendant) VALUES (2, 2);
 INSERT INTO river_paths (ancestor, descendant) VALUES (3, 3);
@@ -29,7 +29,7 @@ INSERT INTO river_paths (ancestor, descendant) VALUES (5, 5);
 INSERT INTO river_paths (ancestor, descendant) VALUES (6, 6);
 
 CREATE TABLE river_waypoints (
-  river_waypoints_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  river_waypoint_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   river_id INTEGER NOT NULL,
   name TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
