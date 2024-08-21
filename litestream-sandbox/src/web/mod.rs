@@ -1,7 +1,6 @@
 pub mod api;
 pub mod index;
 pub mod login;
-// pub mod point;
 
 #[derive(Clone)]
 pub struct State {
