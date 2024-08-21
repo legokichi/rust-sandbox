@@ -14,6 +14,7 @@ pub async fn api(
     let user = auth_session.user;
     match user {
         None => {
+            #[allow(unreachable_patterns)]
             let Ok(req) = serde_json::from_value::<UnAuthRequest>(json) else {
                 return Ok((axum::http::StatusCode::BAD_REQUEST, "invalid request").into_response());
             };
