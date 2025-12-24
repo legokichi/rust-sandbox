@@ -1,0 +1,11 @@
+[build]
+target = "thumbv8m.main-none-eabihf"
+
+[target.thumbv8m.main-none-eabihf]
+runner = "probe-rs run --chip RP2350"
+linker = "flip-link"
+
+[env]
+# defmtのログレベル
+DEFMT_LOG = "info"
+
