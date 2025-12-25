@@ -8,4 +8,3 @@ linker = "flip-link"
 [env]
 # defmtのログレベル
 DEFMT_LOG = "info"
-
