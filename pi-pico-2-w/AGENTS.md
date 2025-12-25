@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `src/main.rs` holds the entry point and the async loop; this is a `#![no_std]` embedded binary.
+- `src/bin/` holds binary examples like `debug.rs`, `blink.rs`, and `button.rs`.
 - `build.rs` configures build-time behavior for the embedded target.
 - `.cargo/config.toml` pins the target (`thumbv8m.main-none-eabihf`) and runner (`probe-rs`).
 - `memory.x` defines the linker memory map for RP2350-class MCUs.
