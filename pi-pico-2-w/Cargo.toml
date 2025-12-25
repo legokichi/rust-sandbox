@@ -3,6 +3,10 @@ name = "pi-pico-2-w"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = []
+skip-cyw43-firmware = []
+
 [dependencies]
 cortex-m-rt     = "0.7"
 embassy-executor = { version = "0.9", features = ["arch-cortex-m", "executor-thread"] }
@@ -12,3 +16,9 @@ embassy-rp       = { version = "0.9", features = ["rp235xa", "time-driver", "cri
 defmt       = "1"
 defmt-rtt   = "1"
 panic-probe = { version = "1", features = ["print-defmt"] }
+cyw43       = { version = "0.6", features = ["defmt"] }
+cyw43-pio   = { version = "0.9", features = ["defmt"] }
+static_cell = "2"
+
+[build-dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }
