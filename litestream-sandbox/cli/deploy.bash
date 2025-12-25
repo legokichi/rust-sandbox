@@ -9,7 +9,7 @@ gcloud run deploy \
   --allow-unauthenticated litestream-sandbox \
   --execution-environment=gen1 \
   --cpu=1 \
-  --memory=128Mi \
+  --memory=256Mi \
   --timeout=3s \
   --concurrency=128 \
   --max-instances=1 \

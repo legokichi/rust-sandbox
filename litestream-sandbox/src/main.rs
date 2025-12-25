@@ -41,7 +41,15 @@ async fn main() -> Result<(), anyhow::Error> {
         redirect_url,
     } = envy::from_env::<Config>()?;
     use std::str::FromStr;
-    let opt = sqlx::sqlite::SqliteConnectOptions::from_str(&database_url)?.foreign_keys(true);
+    let opt = sqlx::sqlite::SqliteConnectOptions::from_str(&database_url)?
+        .foreign_keys(true)
+        // https://litestream.io/tips/#disable-autocheckpoints-for-high-write-load-servers
+        .pragma("wal_autocheckpoint", "0")
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
+        // https://litestream.io/tips/#busy-timeout
+        .busy_timeout(std::time::Duration::from_secs(5))
+        // https://litestream.io/tips/#synchronous-pragma
+        .synchronous(sqlx::sqlite::SqliteSynchronous::Normal);
     let pool = sqlx::sqlite::SqlitePool::connect_with(opt).await?;
 
     // query! マクロ使ってたらいらないはず
@@ -104,13 +112,14 @@ async fn main() -> Result<(), anyhow::Error> {
             "/oauth/callback",
             axum::routing::get(crate::web::login::callback),
         )
+        .nest_service("/assets", tower_http::services::ServeDir::new("dist"))
         .route("/api", axum::routing::post(crate::web::api::api))
-        // .nest_service("/", tower_http::services::ServeDir::new("static"))
         .layer(axum_login::AuthManagerLayerBuilder::new(backend, session_layer).build())
         .layer(
-            tower_http::cors::CorsLayer::new()
-                .allow_methods(tower_http::cors::Any)
-                .allow_origin(tower_http::cors::Any),
+            tower_http::cors::CorsLayer::very_permissive()
+                // .allow_credentials(true)
+                // .allow_methods(tower_http::cors::Any)
+                // .allow_origin(tower_http::cors::Any),
         )
         .layer(tower_http::trace::TraceLayer::new_for_http())
         .layer(tower_http::compression::CompressionLayer::new())

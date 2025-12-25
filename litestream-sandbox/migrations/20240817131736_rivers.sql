@@ -6,27 +6,21 @@ CREATE TABLE rivers (
    created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
    updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
 );
-INSERT INTO rivers (name) VALUES ('荒川長瀞');
-INSERT INTO rivers (name) VALUES ('多摩川');
-INSERT INTO rivers (name) VALUES ('久慈川');
-INSERT INTO rivers (name) VALUES ('利根川');
-INSERT INTO rivers (name) VALUES ('富士川');
-INSERT INTO rivers (name) VALUES ('阿賀野川');
-INSERT INTO rivers (name) VALUES ('本栖湖');
 
-CREATE TABLE river_paths (
-    ancestor INTEGER NOT NULL,
-    descendant INTEGER NOT NULL,
-    PRIMARY KEY (ancestor, descendant),
-    FOREIGN KEY (ancestor) REFERENCES rivers(river_id),
-    FOREIGN KEY (descendant) REFERENCES rivers(river_id)
-) WITHOUT ROWID;
-INSERT INTO river_paths (ancestor, descendant) VALUES (1, 1);
-INSERT INTO river_paths (ancestor, descendant) VALUES (2, 2);
-INSERT INTO river_paths (ancestor, descendant) VALUES (3, 3);
-INSERT INTO river_paths (ancestor, descendant) VALUES (4, 4);
-INSERT INTO river_paths (ancestor, descendant) VALUES (5, 5);
-INSERT INTO river_paths (ancestor, descendant) VALUES (6, 6);
+
+-- CREATE TABLE river_paths (
+--     ancestor INTEGER NOT NULL,
+--     descendant INTEGER NOT NULL,
+--     PRIMARY KEY (ancestor, descendant),
+--     FOREIGN KEY (ancestor) REFERENCES rivers(river_id),
+--     FOREIGN KEY (descendant) REFERENCES rivers(river_id)
+-- ) WITHOUT ROWID;
+-- INSERT INTO river_paths (ancestor, descendant) VALUES (1, 1);
+-- INSERT INTO river_paths (ancestor, descendant) VALUES (2, 2);
+-- INSERT INTO river_paths (ancestor, descendant) VALUES (3, 3);
+-- INSERT INTO river_paths (ancestor, descendant) VALUES (4, 4);
+-- INSERT INTO river_paths (ancestor, descendant) VALUES (5, 5);
+-- INSERT INTO river_paths (ancestor, descendant) VALUES (6, 6);
 
 CREATE TABLE river_waypoints (
   river_waypoint_id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -42,6 +36,9 @@ CREATE TABLE river_waypoints (
   FOREIGN KEY (river_id) references rivers(river_id) ON DELETE CASCADE
 );
 
+INSERT INTO rivers (name) VALUES ('無');
+
+INSERT INTO rivers (name) VALUES ('荒川長瀞');
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (1, 1.0, '秩父公園橋', 139.0719155531588, 36.002780508652975);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (1, 2.0, '武之鼻橋', 139.0725162723582, 36.003201622651204);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (1, 3.0, 'せせらぎ荘の瀬', 139.0765789104678, 36.00723361904889);
@@ -115,7 +112,7 @@ INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALU
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (1, 71.0, '玉淀ダムのEP', 139.16127969112873, 36.117017779899484);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (1, 72.0, '玉淀ダム', 139.16953024811244, 36.116160102616234);
 
-
+INSERT INTO rivers (name) VALUES ('多摩川');
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (2, 1.0, '白丸駅', 139.11484235039475, 35.81197300620613);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (2, 2.0, '数馬峡橋', 139.11509811594544, 35.80979171198217);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (2, 3.0, '白丸湖EP', 139.1163506934866, 35.81072660234875);
@@ -137,7 +134,7 @@ INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALU
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (2, 19.0, '釜の淵公園駐車場', 139.25569029811456, 35.784451978337216);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (2, 20.0, '青梅駅', 139.25834360426683, 35.79027062559453);
 
-
+INSERT INTO rivers (name) VALUES ('久慈川');
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (3, 1.0, '常陸大子駅', 140.35080250269525, 36.770774326721806);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (3, 2.0, '湯の里公園EP', 140.35742028244655, 36.76667757086997);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (3, 3.0, '久慈川橋', 140.35813015837178, 36.762228431857224);
@@ -181,16 +178,162 @@ INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALU
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (3, 41.0, '平山橋（沈下橋）', 140.3879894614594, 36.6658553575746);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (3, 42.0, '堰', 140.38825731374612, 36.66230703709776);
 
-
+INSERT INTO rivers (name) VALUES ('利根川');
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 1.0, '奥利根湖ゲート', 139.05839374130173, 36.86386954837418);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 2.0, '矢木沢ダムEP', 139.05189725730443, 36.91221208964946);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 3.0, '矢木沢ダム駐車場', 139.05307807306556, 36.911018264155814);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 4.0, '奥利根湖事務所', 139.05227413894397, 36.91139461047338);
 
+
+
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 1.0, '湯檜曽駅ゆびそ', 138.98646812422595, 36.80322412356702);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 2.0, 'スタート', 138.9884753879484, 36.80375698348929);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 3.0, '幸知橋こうちばし', 138.98735164626947, 36.79961110116844);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 4.0, 'ダイナマイトの瀬', 138.99059569321594, 36.7967844876507);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 5.0, 'スリーシスターズ＆ザ・ウォールの瀬', 138.99011974357992, 36.79578160890378);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 6.0, '水明荘プットイン', 138.97708703494513, 36.78540756603442);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 7.0, 'スリーウェイズの瀬', 138.9770931868941, 36.78455185334815);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 8.0, '第八利根川橋梁', 138.98283086560878, 36.790323062983006);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 9.0, '大鹿橋', 138.9766704935036, 36.784031959986635);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 10.0, '第七利根川橋梁', 138.97646159887333, 36.78362823967291);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 11.0, '第六利根川橋梁', 138.9735632252436, 36.782947280807335);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 12.0, '谷川橋', 138.96821152955684, 36.781990133152945);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 13.0, 'JA前プットイン', 138.96677312289464, 36.7774973059239);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 14.0, '湯原橋', 138.97063062448825, 36.773363336652665);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 15.0, '水上ウェーブスの瀬', 138.97147983563187, 36.76974757801139);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 16.0, '水上橋', 138.97156398476886, 36.768628606015255);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 17.0, '紅葉橋', 138.97054310545406, 36.76603688333975);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 18.0, '笹笛橋', 138.97087135326413, 36.76114514369988);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 19.0, 'AKIKOの瀬', 138.97088591255465, 36.76106651773138);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 20.0, '諏訪峡大橋', 138.97360567249578, 36.75972134449587);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 21.0, '竜ヶ瀬', 138.974034879457, 36.75954160380678);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 22.0, 'フリッパーズの瀬', 138.9760166884277, 36.758177067158655);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 23.0, 'ショットガンの瀬', 138.97661906450782, 36.757554758588654);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 24.0, 'メガウォッシュの瀬', 138.97692817854886, 36.75672923942963);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 25.0, '銚子橋', 138.97655153538128, 36.7532096446173);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 26.0, '銚子橋プットイン', 138.97552810937503, 36.75214311165925);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 27.0, 'なすびホールの瀬', 138.9781666596558, 36.747801219938125);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 28.0, 'ホットウェーブスの瀬', 138.98349476219892, 36.738766121460486);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 29.0, '吾妻橋', 138.98278202114417, 36.73762377278045);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 30.0, '利根橋', 138.97980631828187, 36.72374507030281);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 31.0, '木の根ホール', 138.97928443048318, 36.72399585071685);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 32.0, '利根橋前堰堤', 138.98053408897837, 36.723446772824914);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 33.0, '上牧発電所前堰堤', 138.9786200431598, 36.71349645771582);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 34.0, '大峰橋', 138.9788558778381, 36.7098484321733);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 35.0, '関越ウェーブス', 138.9788141917799, 36.708539838986425);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 36.0, 'スラッパー', 138.9788339231861, 36.70348716046914);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 37.0, '矢瀬橋', 138.9826917940874, 36.699031140868826);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 38.0, 'ホタル', 138.98366348297225, 36.695962294825236);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 39.0, 'テトリス', 138.98371593193784, 36.69518556598884);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 40.0, 'ナイスビューの瀬', 138.99620885423485, 36.68079081338186);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 41.0, '月夜野橋', 138.99610045867362, 36.682398398382205);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 42.0, '徒渡橋ただわたり', 138.9963700365566, 36.678581885488626);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 43.0, '月夜野大橋', 139.00149373024783, 36.669813041488496);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 44.0, 'Fカップの瀬', 139.0023276045115, 36.66932950517871);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 45.0, '道路情報ターミナル 多機能トイレ', 139.0110442726823, 36.664933521722546);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 46.0, '地蔵橋', 139.02778439084656, 36.63972594642);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 47.0, 'ファイナルファンタジーの瀬', 139.0243775898637, 36.64143667107351);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 48.0, '沼田大橋', 139.03070985289065, 36.637617021527035);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 49.0, '鷺石橋', 139.03726765029992, 36.632333244343144);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 50.0, '地蔵橋下プットオン', 139.0282047086552, 36.638934955462005);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 51.0, '第五利根川橋梁', 139.03867495184215, 36.63077991146899);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 52.0, '瀬3', 139.03940878587812, 36.62976319126622);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 53.0, '沼田八景 利根の早瀬', 139.03722507438027, 36.627159401146585);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 54.0, '戸鹿野橋', 139.04116811244825, 36.618815624200664);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 55.0, '久呂保橋', 139.0472740368721, 36.60483745846642);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 56.0, '綾戸ダム', 139.0547895534436, 36.589052832779984);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 57.0, '鉄道橋', 139.0560660244634, 36.58407594931748);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 58.0, '鉄道橋2', 139.05519885148826, 36.584130922346986);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 59.0, '綾戸簗', 139.053945281247, 36.58447965734172);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 60.0, '綾戸橋', 139.04971553622937, 36.581384901678575);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 61.0, '鉄道橋3', 139.052386800509, 36.57382824307513);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 62.0, '鉄道橋4', 139.04111946988132, 36.563923474598965);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 63.0, '赤い水管橋の瀬', 139.0394581253221, 36.5545498667485);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 64.0, '敷島橋', 139.0304686300708, 36.54588397300043);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 65.0, '浅田橋', 139.02803204647716, 36.53504477250246);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 66.0, 'ユートピアの瀬', 139.02678840194574, 36.537389806226926);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 67.0, '宮田橋', 139.0208017114243, 36.526113655256964);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (4, 68.0, '渋川医療センターテイクアウト', 139.01969163625554, 36.51041113985781);
+
+INSERT INTO rivers (name) VALUES ('富士川');
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 1.0, '富士川親水公園駐車場', 138.47188663475953, 35.554366614655166);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 2.0, '富士川大橋1', 138.4768114976785, 35.55613440782284);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 3.0, '鰍沢口駅', 138.47080781594553, 35.54145715738298);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 4.0, '富士川橋1', 138.47322540493846, 35.550299291252585);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 5.0, '戸川', 138.46439487607435, 35.54510191211489);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 6.0, '富士橋', 138.45961623162015, 35.53952615492956);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 7.0, '大柳川流入', 138.4548873789371, 35.515876552258774);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 8.0, '鹿島橋', 138.45861729413375, 35.512603467908775);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 9.0, '月見橋', 138.44959176207533, 35.49637094024685);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 10.0, '甲斐岩間駅', 138.4630850869858, 35.49249027660201);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 11.0, '峡南橋', 138.45485574929825, 35.484738742469574);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 12.0, '富士川橋', 138.44199594412981, 35.46550078152008);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 13.0, '中富橋', 138.4452317525275, 35.45696064399594);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 14.0, '飯富橋', 138.43831307098074, 35.440289832643444);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 15.0, '早川流入', 138.44748161174053, 35.426597286504986);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 16.0, '富山橋', 138.45294904590992, 35.419777126113715);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 17.0, '常葉川流入', 138.45648865167948, 35.41586778803813);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 18.0, '波高島駅', 138.45981789108538, 35.41859861054476);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 19.0, '塩之沢駅', 138.45386024391934, 35.379670175570226);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 20.0, '塩之沢堰', 138.4501427945582, 35.377015810575216);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 21.0, '波木井川', 138.44726062990574, 35.371184455149645);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 22.0, '身延橋', 138.4514580235213, 35.36478176922981);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 23.0, '身延駅', 138.45308096672835, 35.36150773750484);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 24.0, '甲斐大島駅', 138.4521067541609, 35.32823615100236);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 25.0, '富士川大橋', 138.4510173776276, 35.312230879504355);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 26.0, '南部橋', 138.45970208874013, 35.28222816660437);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 27.0, '内船駅', 138.46482856594386, 35.282155835056514);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 28.0, '寄畑駅', 138.47512493411136, 35.264880078200974);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 29.0, '富栄橋', 138.4811168455151, 35.25342631863475);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 30.0, '道の駅とみざわ', 138.48513524467853, 35.24332964682044);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 31.0, '福士川流入', 138.48708300296872, 35.24146405720441);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 32.0, '十島堰', 138.50586565828345, 35.23832710760807);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 33.0, '佐野川流入', 138.5094602546501, 35.237307029828955);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 34.0, '十島駅', 138.51603584673128, 35.23014756796282);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 35.0, '十島の瀬2級', 138.51533999478085, 35.22721859020264);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 36.0, '万栄橋', 138.5180129061753, 35.22779017492714);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 37.0, '稲子駅', 138.5368799914983, 35.23052488521837);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 38.0, '稲子川流入', 138.536906402033, 35.227562006027355);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 39.0, '稲子の瀬', 138.53496335630723, 35.226629842537704);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 40.0, '前釜の瀬3級', 138.55425763925237, 35.204272619196416);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 41.0, '新内房橋', 138.5545031545685, 35.20250720553369);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 42.0, '内房橋', 138.55476557827666, 35.2004031671902);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 43.0, '稲瀬川流入', 138.55340256402835, 35.19715243584423);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 44.0, '釜口の瀬3級', 138.55773492077668, 35.20085939714659);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 45.0, '釜口橋', 138.55809016307515, 35.20045316959596);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 46.0, '芝川流入', 138.56241024946132, 35.19823565334232);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 47.0, '芝川駅', 138.56400535068263, 35.197267893766195);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 48.0, 'デビの瀬2級', 138.5633429201132, 35.19295789367891);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 49.0, 'ポッキズリーブの瀬2級', 138.5652543552868, 35.19087269778038);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 50.0, '富原橋', 138.56997771342915, 35.1922118046794);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 51.0, 'ドラゴンの瀬2級', 138.5759833119094, 35.195005114030636);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 52.0, 'クラッシャーの瀬2級', 138.58244307825944, 35.195509767580134);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 53.0, '沼久保駅', 138.58445290179128, 35.19919045161812);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (5, 54.0, '蓬莱橋', 138.58993334850007, 35.19400042725135);
+
+
+
+INSERT INTO rivers (name) VALUES ('阿賀野川');
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (6, 1.0, '湖山荘', 139.13865245035691, 37.13544041743985);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (6, 2.0, '奥只見山荘', 139.13818900179223, 37.134947794321036);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (6, 3.0, '奥只見湖EP', 139.17101255341294, 37.134153898090474);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (6, 4.0, '奥只見湖駐車場', 139.16956629399255, 37.13431510025438);
 
+INSERT INTO rivers (name) VALUES ('本栖湖');
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (7, 1.0, '本栖湖駐車場', 138.60295772590936, 35.46320148088398);
 INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (7, 2.0, '本栖湖EP', 138.60195974446194, 35.4622899625447);
+
+
+INSERT INTO rivers (name) VALUES ('那珂川');
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (8, 1.0, '烏山大橋手前の堰堤', 140.17254208612061, 36.65290029452072);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (8, 2.0, '烏山駅', 140.15510528663455, 36.65018180982099);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (8, 3.0, '烏山大橋', 140.16907113642833, 36.65188872486162);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (8, 4.0, '下野大橋', 140.16494150804505, 36.63184825763848);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (8, 5.0, '大瀬橋', 140.18929236115102, 36.57257759752949);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (8, 6.0, '大蔵橋', 140.21081109338797, 36.57578521418853);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (8, 7.0, '新那珂川橋', 140.24281410560286, 36.563579084432604);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (8, 8.0, '御前山橋', 140.29696044084136, 36.562241480524136);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (8, 9.0, '那珂川大橋', 140.33157895368552, 36.547033171478134);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (8, 10.0, '那珂川大橋EP', 140.329415301655, 36.54781664038329);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (8, 11.0, '道の駅かつら', 140.33384235049834, 36.54441535914155);
+INSERT INTO river_waypoints (river_id, distance, name, longitude, latitude) VALUES (8, 12.0, '道の駅かつらキャンプ場', 140.33293390761156, 36.546102742907166);
