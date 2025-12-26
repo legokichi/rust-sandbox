@@ -1,0 +1,17 @@
+[package]
+name = "kds-sandbox"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+aws-config = { version = "1.5.1", features = ["behavior-version-latest"] }
+aws-sdk-kinesis = "1.31.0"
+aws-smithy-types-convert = { version = "0.60.8", features = ["convert-chrono"] }
+chrono = "0.4.38"
+env_logger = "0.11.3"
+futures = "0.3.30"
+log = "0.4.21"
+serde = "1.0.203"
+serde_json = "1.0.117"
+tokio = { version = "1.38.0", features = ["full"] }
